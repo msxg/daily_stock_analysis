@@ -1,0 +1,31 @@
+.heroBanner {
+  min-height: calc(100vh - 60px);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(20, 184, 166, 0.2), transparent 40%),
+    radial-gradient(circle at 90% 20%, rgba(16, 185, 129, 0.16), transparent 38%),
+    linear-gradient(180deg, #f4faf9 0%, #edf6f3 100%);
+}
+
+.title {
+  margin-bottom: 0.75rem;
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0 auto;
+  max-width: 760px;
+  font-size: 1.05rem;
+  color: #334155;
+}
+
+.actions {
+  margin-top: 1.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  justify-content: center;
+}

@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+:root {
+  --font-display: "Space Grotesk", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-body: "Manrope", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Consolas", monospace;
+  --dsa-shell-sidebar-width: 200px;
+  --dsa-shell-content-padding: 15px;
+  --dsa-layout-gap: 10px;
+  --dsa-card-padding: 15px;
+
+  font-family: var(--font-body);
+  font-feature-settings: "rlig" 1, "calt" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: #0f172a;
+  background: #f2f7f5;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+}

@@ -1,0 +1,9 @@
+{
+  "label": "DSA UI 文档",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "title": "DSA UI 文档中心",
+    "description": "包含重构方案、开发计划、任务跟踪与操作手册。"
+  }
+}

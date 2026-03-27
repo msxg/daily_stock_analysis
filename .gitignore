@@ -76,5 +76,6 @@ verify_*.py
 
 # ignore static files
 static/
+static-ui-preview/
 /apps/dsa-desktop/dist/
 /apps/dsa-desktop/node_modules/

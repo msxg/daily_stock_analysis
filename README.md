@@ -458,6 +458,16 @@ npm run lint
 npm run build
 ```
 
+如修改新前端工作区（`apps/dsa-ui` / `apps/dsa-docs`），先使用 `fnm` 切到仓库固定的 Node `22.13.0`：
+
+```bash
+eval "$(fnm env)"
+fnm use --install-if-missing --version-file-strategy=recursive
+node -v
+```
+
+然后再执行对应目录下的 `npm` / `npx` 命令。
+
 ## 📄 License
 [MIT License](LICENSE) © 2026 ZhuLinsen
 

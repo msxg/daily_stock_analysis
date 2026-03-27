@@ -100,6 +100,17 @@ npm install
 npm run build
 ```
 
+### 前端运行时
+
+```bash
+eval "$(fnm env)"
+fnm use --install-if-missing --version-file-strategy=recursive
+node -v
+```
+
+- `apps/dsa-ui` 与 `apps/dsa-docs` 默认使用仓库根目录 `.node-version` 固定的 Node `22.13.0`。
+- 进入前端相关任务前，先执行 `eval "$(fnm env)" && fnm use --install-if-missing --version-file-strategy=recursive`，再运行 `npm` / `npx` / `playwright` / `vite` / `vitest` 命令。
+
 ### PR / CI 证据
 
 ```bash
@@ -154,6 +165,13 @@ gh run view <run_id> --log-failed
   - 适用范围：`apps/dsa-web/`
   - 默认执行：`cd apps/dsa-web && npm ci && npm run lint && npm run build`
   - 若涉及 API 联调、路由、状态管理、Markdown/图表渲染或认证状态，交付说明中要明确说明联动面和未覆盖风险。
+
+- 新前端/文档前端改动：
+  - 适用范围：`apps/dsa-ui/`、`apps/dsa-docs/`
+  - 前置要求：先执行 `eval "$(fnm env)" && fnm use --install-if-missing --version-file-strategy=recursive`，确保命中仓库 `.node-version` 指定的 Node `22.13.0`
+  - `apps/dsa-ui` 默认执行：`cd apps/dsa-ui && npm ci && npm run lint && npm run build`
+  - `apps/dsa-docs` 默认执行：`cd apps/dsa-docs && npm ci && npm run build`
+  - 若命令异常先检查 `node -v`，避免把旧版 Node 运行时问题误判成代码缺陷。
 
 - 桌面端改动：
   - 适用范围：`apps/dsa-desktop/`、`scripts/run-desktop.ps1`、`scripts/build-desktop*.ps1`、`scripts/build-*.sh`、`docs/desktop-package.md`
