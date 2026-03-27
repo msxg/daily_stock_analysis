@@ -23,6 +23,7 @@ If any instruction in this file conflicts with `AGENTS.md`, follow `AGENTS.md`.
 
 - Backend changes: prefer `./scripts/ci_gate.sh`; at minimum run `python -m py_compile` on changed Python files and the closest deterministic tests.
 - Web changes: run `cd apps/dsa-web && npm ci && npm run lint && npm run build`.
+- `apps/dsa-ui` and `apps/dsa-docs` require Node `22.13.0` from the repo-root `.node-version`; run `eval "$(fnm env)" && fnm use --install-if-missing --version-file-strategy=recursive` before `npm`/`npx` commands.
 - Desktop changes: build web first, then desktop if feasible.
 - Review work should prioritize CI evidence (`gh pr checks`, workflow logs) before re-running local validation.
 - AI governance changes: run `python scripts/check_ai_assets.py`.
