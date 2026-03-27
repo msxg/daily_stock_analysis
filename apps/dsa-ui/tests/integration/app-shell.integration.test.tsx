@@ -1,13 +1,62 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 import { App } from '@/app/App'
+import { server } from '../../tests/mocks/server'
 
 vi.mock('@/shared/ui/charts/AreaTrendChart', () => ({
   AreaTrendChart: () => <div data-testid="mock-area-chart" />,
 }))
 
 describe('App shell routing', () => {
+  it('logs out and returns to login page', async () => {
+    const user = userEvent.setup()
+    let loggedIn = true
+
+    server.use(
+      http.get('/api/v1/auth/status', () =>
+        HttpResponse.json({
+          auth_enabled: true,
+          logged_in: loggedIn,
+          password_set: true,
+          password_changeable: true,
+          setup_state: 'enabled',
+        }),
+      ),
+      http.post('/api/v1/auth/logout', () => {
+        loggedIn = false
+        return HttpResponse.json({ success: true })
+      }),
+    )
+
+    window.history.pushState({}, '', '/')
+    render(<App />)
+
+    expect(await screen.findByTestId('page-dashboard')).toBeInTheDocument()
+    await user.click(screen.getByTestId('shell-logout-button'))
+    expect(await screen.findByTestId('page-login')).toBeInTheDocument()
+  })
+
+  it('redirects to login when auth is enabled but session is missing', async () => {
+    server.use(
+      http.get('/api/v1/auth/status', () =>
+        HttpResponse.json({
+          auth_enabled: true,
+          logged_in: false,
+          password_set: true,
+          password_changeable: true,
+          setup_state: 'enabled',
+        }),
+      ),
+    )
+
+    window.history.pushState({}, '', '/')
+    render(<App />)
+
+    expect(await screen.findByTestId('page-login')).toBeInTheDocument()
+  })
+
   it('renders dashboard by default', () => {
     window.history.pushState({}, '', '/')
     render(<App />)

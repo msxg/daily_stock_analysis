@@ -23,6 +23,17 @@ function renderLogin(initialEntry = '/login') {
 describe('Login page', () => {
   it('logs in and redirects to workspace route', async () => {
     const user = userEvent.setup()
+    server.use(
+      http.get('/api/v1/auth/status', () =>
+        HttpResponse.json({
+          auth_enabled: true,
+          logged_in: false,
+          password_set: true,
+          password_changeable: true,
+          setup_state: 'enabled',
+        }),
+      ),
+    )
     renderLogin('/login?redirect=%2F')
 
     expect(await screen.findByTestId('page-login')).toBeInTheDocument()

@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router-dom'
 import { createBrowserRouter, createMemoryRouter, Navigate } from 'react-router-dom'
 import { AppShell } from '@/app/layouts/AppShell'
+import { AuthGate } from '@/app/router/AuthGate'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { BacktestPage } from '@/features/backtest/pages/BacktestPage'
 import { ChatPage } from '@/features/chat/pages/ChatPage'
@@ -10,7 +11,11 @@ import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 
 const appRoutes: RouteObject[] = [
   {
-    element: <AppShell />,
+    element: (
+      <AuthGate>
+        <AppShell />
+      </AuthGate>
+    ),
     children: [
       { path: '/', element: <DashboardPage /> },
       { path: '/chat', element: <ChatPage /> },

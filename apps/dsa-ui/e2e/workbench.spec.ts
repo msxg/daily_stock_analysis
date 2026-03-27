@@ -1,5 +1,81 @@
 import { expect, test } from '@playwright/test'
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/v1/**', (route) => {
+    const request = route.request()
+    const { pathname } = new URL(request.url())
+
+    if (pathname === '/api/v1/auth/status') {
+      return route.fulfill({
+        json: {
+          auth_enabled: true,
+          logged_in: true,
+          password_set: true,
+          password_changeable: true,
+          setup_state: 'enabled',
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/agent/skills') {
+      return route.fulfill({
+        json: {
+          default_skill_id: 'bull_trend',
+          skills: [
+            { id: 'bull_trend', name: '多头趋势', description: '识别多头排列与趋势延续。' },
+            { id: 'chan_theory', name: '缠论', description: '基于中枢结构识别买卖点。' },
+            { id: 'wave_theory', name: '波浪理论', description: '结合波段节奏评估拐点。' },
+          ],
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/agent/chat/sessions') {
+      return route.fulfill({
+        json: {
+          sessions: [],
+        },
+      })
+    }
+
+    if (pathname.startsWith('/api/v1/agent/chat/sessions/')) {
+      return route.fulfill({
+        json: {
+          session_id: pathname.replace('/api/v1/agent/chat/sessions/', ''),
+          messages: [],
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/analysis/tasks') {
+      return route.fulfill({
+        json: {
+          total: 0,
+          pending: 0,
+          processing: 0,
+          tasks: [],
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/history') {
+      return route.fulfill({
+        json: {
+          total: 0,
+          page: 1,
+          limit: 20,
+          items: [],
+        },
+      })
+    }
+
+    return route.fulfill({
+      status: 200,
+      json: {},
+    })
+  })
+})
+
 test('chat stream and context injection flow @visual', async ({ page }) => {
   await page.route('**/api/v1/agent/skills**', (route) =>
     route.fulfill({
@@ -288,7 +364,9 @@ test('portfolio and backtest workspace flows @visual', async ({ page }) => {
 })
 
 test('settings and login flows @visual', async ({ page }) => {
-  await page.route('**/api/v1/system/config', (route) => {
+  let isLoggedIn = true
+
+  await page.route('**/api/v1/system/config**', (route) => {
     if (route.request().method() === 'GET') {
       return route.fulfill({
         json: {
@@ -363,7 +441,7 @@ test('settings and login flows @visual', async ({ page }) => {
     route.fulfill({
       json: {
         auth_enabled: true,
-        logged_in: false,
+        logged_in: isLoggedIn,
         password_set: true,
         password_changeable: true,
         setup_state: 'enabled',
@@ -374,14 +452,17 @@ test('settings and login flows @visual', async ({ page }) => {
     route.fulfill({
       json: {
         auth_enabled: true,
-        logged_in: false,
+        logged_in: isLoggedIn,
         password_set: true,
         password_changeable: true,
         setup_state: 'enabled',
       },
     }),
   )
-  await page.route('**/api/v1/auth/login', (route) => route.fulfill({ json: { success: true } }))
+  await page.route('**/api/v1/auth/login', (route) => {
+    isLoggedIn = true
+    return route.fulfill({ json: { success: true } })
+  })
 
   await page.goto('/settings')
   await expect(page.getByTestId('page-settings')).toBeVisible()
@@ -390,6 +471,7 @@ test('settings and login flows @visual', async ({ page }) => {
   await page.getByTestId('settings-save').click()
   await expect(page.getByText(/配置已保存/)).toBeVisible()
 
+  isLoggedIn = false
   await page.goto('/login')
   await expect(page.getByTestId('page-login')).toBeVisible()
   await page.getByTestId('login-password').fill('password-123')

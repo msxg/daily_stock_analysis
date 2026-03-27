@@ -821,7 +821,7 @@ export const handlers = [
   http.get('/api/v1/auth/status', () =>
     HttpResponse.json({
       auth_enabled: true,
-      logged_in: false,
+      logged_in: true,
       password_set: true,
       password_changeable: true,
       setup_state: 'enabled',
@@ -831,7 +831,7 @@ export const handlers = [
     const body = (await request.json()) as { authEnabled?: boolean }
     return HttpResponse.json({
       auth_enabled: !!body.authEnabled,
-      logged_in: false,
+      logged_in: true,
       password_set: true,
       password_changeable: true,
       setup_state: 'enabled',

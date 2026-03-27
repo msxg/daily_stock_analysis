@@ -1,6 +1,247 @@
 import { expect, test } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/v1/**', (route) => {
+    const request = route.request()
+    const { pathname } = new URL(request.url())
+
+    if (pathname === '/api/v1/auth/status') {
+      return route.fulfill({
+        json: {
+          auth_enabled: true,
+          logged_in: true,
+          password_set: true,
+          password_changeable: true,
+          setup_state: 'enabled',
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/analysis/tasks') {
+      return route.fulfill({
+        json: {
+          total: 0,
+          pending: 0,
+          processing: 0,
+          tasks: [],
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/history') {
+      return route.fulfill({
+        json: {
+          total: 0,
+          page: 1,
+          limit: 20,
+          items: [],
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/agent/skills') {
+      return route.fulfill({
+        json: {
+          default_skill_id: 'bull_trend',
+          skills: [
+            { id: 'bull_trend', name: '多头趋势', description: '识别多头排列与趋势延续。' },
+            { id: 'chan_theory', name: '缠论', description: '基于中枢结构识别买卖点。' },
+            { id: 'wave_theory', name: '波浪理论', description: '结合波段节奏评估拐点。' },
+          ],
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/agent/chat/sessions') {
+      return route.fulfill({
+        json: {
+          sessions: [],
+        },
+      })
+    }
+
+    if (pathname.startsWith('/api/v1/agent/chat/sessions/')) {
+      return route.fulfill({
+        json: {
+          session_id: pathname.replace('/api/v1/agent/chat/sessions/', ''),
+          messages: [],
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/portfolio/accounts') {
+      return route.fulfill({
+        json: {
+          accounts: [
+            {
+              id: 1,
+              name: '主账户',
+              market: 'cn',
+              base_currency: 'CNY',
+              is_active: true,
+            },
+          ],
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/portfolio/snapshot') {
+      return route.fulfill({
+        json: {
+          as_of: '2026-03-27',
+          cost_method: 'fifo',
+          currency: 'CNY',
+          total_cash: 100000,
+          total_market_value: 0,
+          total_equity: 100000,
+          fx_stale: false,
+          account_count: 1,
+          accounts: [
+            {
+              account_id: 1,
+              account_name: '主账户',
+              market: 'cn',
+              base_currency: 'CNY',
+              as_of: '2026-03-27',
+              cost_method: 'fifo',
+              total_cash: 100000,
+              total_market_value: 0,
+              total_equity: 100000,
+              realized_pnl: 0,
+              unrealized_pnl: 0,
+              fee_total: 0,
+              tax_total: 0,
+              fx_stale: false,
+              positions: [],
+            },
+          ],
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/portfolio/risk') {
+      return route.fulfill({
+        json: {
+          as_of: '2026-03-27',
+          cost_method: 'fifo',
+          currency: 'CNY',
+          concentration: {
+            total_market_value: 0,
+            top_weight_pct: 0,
+            alert: false,
+            top_positions: [],
+          },
+          sector_concentration: {
+            total_market_value: 0,
+            top_weight_pct: 0,
+            alert: false,
+            top_sectors: [],
+            coverage: {},
+            errors: [],
+          },
+          drawdown: {
+            series_points: 0,
+            max_drawdown_pct: 0,
+            current_drawdown_pct: 0,
+            alert: false,
+            fx_stale: false,
+          },
+          stop_loss: {
+            near_alert: false,
+            triggered_count: 0,
+            near_count: 0,
+            items: [],
+          },
+          thresholds: {},
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/portfolio/trades') {
+      return route.fulfill({
+        json: {
+          items: [],
+          total: 0,
+          page: 1,
+          page_size: 20,
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/portfolio/cash-ledger') {
+      return route.fulfill({
+        json: {
+          items: [],
+          total: 0,
+          page: 1,
+          page_size: 20,
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/portfolio/corporate-actions') {
+      return route.fulfill({
+        json: {
+          items: [],
+          total: 0,
+          page: 1,
+          page_size: 20,
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/backtest/results') {
+      return route.fulfill({
+        json: {
+          total: 0,
+          page: 1,
+          limit: 20,
+          items: [],
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/backtest/performance') {
+      return route.fulfill({
+        json: {
+          scope: 'overall',
+          eval_window_days: 10,
+          engine_version: 'v1',
+          total_evaluations: 0,
+          completed_count: 0,
+          insufficient_count: 0,
+          long_count: 0,
+          cash_count: 0,
+          win_count: 0,
+          loss_count: 0,
+          neutral_count: 0,
+          direction_accuracy_pct: 0,
+          win_rate_pct: 0,
+          avg_simulated_return_pct: 0,
+          advice_breakdown: {},
+          diagnostics: {},
+        },
+      })
+    }
+
+    if (pathname === '/api/v1/system/config') {
+      return route.fulfill({
+        json: {
+          config_version: 'mock-v1',
+          mask_token: '******',
+          items: [],
+        },
+      })
+    }
+
+    return route.fulfill({
+      status: 200,
+      json: {},
+    })
+  })
+})
+
 test('desktop navigation and accessibility smoke @visual', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByTestId('page-dashboard')).toBeVisible()

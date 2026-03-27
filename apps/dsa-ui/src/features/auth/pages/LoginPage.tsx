@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { authApi, getParsedApiError } from '@/shared/api'
@@ -28,6 +28,14 @@ export function LoginPage() {
   }, [searchParams])
 
   const isFirstTime = authStatusQuery.data?.setupState === 'no_password' || !authStatusQuery.data?.passwordSet
+  const authEnabled = authStatusQuery.data?.authEnabled ?? false
+  const alreadyLoggedIn = authStatusQuery.data?.loggedIn ?? false
+
+  useEffect(() => {
+    if (!authStatusQuery.isFetching && authEnabled && alreadyLoggedIn) {
+      navigate(redirect, { replace: true })
+    }
+  }, [alreadyLoggedIn, authEnabled, authStatusQuery.isFetching, navigate, redirect])
 
   const handleSubmit = async () => {
     setFeedback(null)

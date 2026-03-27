@@ -1,14 +1,35 @@
-import { Menu, X } from 'lucide-react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { LogOut, Menu, X } from 'lucide-react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { navRoutes, getRouteDescription, getRouteLabel } from '@/app/router/routeManifest'
+import { authApi, getParsedApiError } from '@/shared/api'
 import { cn } from '@/shared/lib/cn'
 import { useShellStore } from '@/shared/store/useShellStore'
 
 export function AppShell() {
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const location = useLocation()
   const { mobileMenuOpen, closeMobileMenu, toggleMobileMenu } = useShellStore()
   const pageLabel = getRouteLabel(location.pathname)
   const pageDescription = getRouteDescription(location.pathname)
+  const [logoutFeedback, setLogoutFeedback] = useState<string | null>(null)
+
+  const logoutMutation = useMutation({
+    mutationFn: authApi.logout,
+  })
+
+  const handleLogout = async () => {
+    setLogoutFeedback(null)
+    try {
+      await logoutMutation.mutateAsync()
+      queryClient.clear()
+      navigate('/login', { replace: true })
+    } catch (error) {
+      setLogoutFeedback(getParsedApiError(error).message)
+    }
+  }
 
   return (
     <div
@@ -64,7 +85,7 @@ export function AppShell() {
 
         <div className="flex min-h-screen flex-1 flex-col">
           <header className="sticky top-0 z-30 border-b border-teal-900/10 bg-white/75 px-[var(--dsa-shell-content-padding)] py-2.5 backdrop-blur-xl">
-            <div className="flex items-center gap-3">
+            <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -82,6 +103,19 @@ export function AppShell() {
                     </p>
                   ) : null}
                 </div>
+              </div>
+              <div className="flex items-end gap-2">
+                {logoutFeedback ? <p className="hidden text-xs text-rose-700 md:block">{logoutFeedback}</p> : null}
+                <button
+                  type="button"
+                  onClick={() => void handleLogout()}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-teal-900/15 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  data-testid="shell-logout-button"
+                  disabled={logoutMutation.isPending}
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  {logoutMutation.isPending ? '退出中...' : '退出登录'}
+                </button>
               </div>
             </div>
           </header>
