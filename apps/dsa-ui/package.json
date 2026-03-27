@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5174",
-    "build": "tsc -b && vite build",
-    "build:preview": "tsc -b && vite build",
-    "build:static": "DSA_UI_BUILD_TARGET=static tsc -b && vite build",
+    "build": "tsc -b && DSA_UI_BUILD_TARGET=static vite build",
+    "build:preview": "tsc -b && DSA_UI_BUILD_TARGET=preview vite build",
+    "build:static": "tsc -b && DSA_UI_BUILD_TARGET=static vite build",
     "manual:assets": "node scripts/generate-user-manual-assets.mjs",
     "lint": "eslint .",
     "preview": "vite preview --host 0.0.0.0 --port 4174",

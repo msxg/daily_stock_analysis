@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
-const buildTarget = process.env.DSA_UI_BUILD_TARGET === 'static' ? 'static' : 'preview'
+const buildTarget = process.env.DSA_UI_BUILD_TARGET === 'preview' ? 'preview' : 'static'
 const buildOutDir =
   buildTarget === 'static'
     ? path.resolve(__dirname, '../../static')
