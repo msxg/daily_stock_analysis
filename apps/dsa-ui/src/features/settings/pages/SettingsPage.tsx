@@ -36,6 +36,12 @@ const categoryOrder: SystemConfigCategory[] = [
   'uncategorized',
 ]
 
+const customSectionCountByCategory: Partial<Record<SystemConfigCategory, number>> = {
+  ai_model: 1,
+  system: 2,
+  ui: 1,
+}
+
 function normalizeOption(option: string | { label: string; value: string }) {
   if (typeof option === 'string') {
     return { label: option, value: option }
@@ -161,6 +167,9 @@ export function SettingsPage() {
   }, [effectiveActiveCategory, allItems, searchKeyword])
 
   const activeTheme = getThemeDefinition(theme)
+  const showUiSection = effectiveActiveCategory === 'ui'
+  const showSystemSections = effectiveActiveCategory === 'system'
+  const showAiModelSections = effectiveActiveCategory === 'ai_model'
 
   const dirtyKeys = useMemo(() => {
     return allItems
@@ -431,7 +440,8 @@ export function SettingsPage() {
           <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">配置分类</p>
           <div className="mt-2 space-y-2">
             {categories.map((category) => {
-              const count = category === 'ui' ? 1 : allItems.filter((item) => (item.schema?.category || 'uncategorized') === category).length
+              const itemCount = allItems.filter((item) => (item.schema?.category || 'uncategorized') === category).length
+              const count = itemCount + (customSectionCountByCategory[category] || 0)
               return (
                 <button
                   key={category}
@@ -458,7 +468,7 @@ export function SettingsPage() {
               {effectiveActiveCategory === 'ui' ? 'UI 偏好' : '当前分类配置项'}
             </p>
 
-            {effectiveActiveCategory === 'ui' ? (
+            {showUiSection ? (
               <div className="mt-3" data-testid="settings-ui-panel">
                 <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                   <div>
@@ -549,159 +559,165 @@ export function SettingsPage() {
             )}
           </section>
 
-          <section className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-[var(--dsa-card-padding)]">
-            <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">认证设置</p>
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
-              <label className="inline-flex items-center gap-2 rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-700">
+          {showSystemSections ? (
+            <>
+              <section className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-[var(--dsa-card-padding)]" data-testid="settings-auth-panel">
+                <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">认证设置</p>
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <label className="inline-flex items-center gap-2 rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={authEnabledDraft}
+                        onChange={(event) => setAuthEnabledOverride(event.target.checked)}
+                        data-testid="settings-auth-toggle"
+                      />
+                    启用管理员认证
+                  </label>
+                  <div className="rounded-lg border dsa-theme-border-subtle bg-white px-3 py-2 text-xs text-slate-600">
+                    当前状态：{authStatusQuery.data?.loggedIn ? '已登录' : '未登录'} · 密码{authStatusQuery.data?.passwordSet ? '已设置' : '未设置'}
+                  </div>
+                </div>
+
+                <div className="mt-3 grid gap-2 md:grid-cols-3">
                   <input
-                    type="checkbox"
-                    checked={authEnabledDraft}
-                    onChange={(event) => setAuthEnabledOverride(event.target.checked)}
-                    data-testid="settings-auth-toggle"
+                    type="password"
+                    value={authCurrentPassword}
+                    onChange={(event) => setAuthCurrentPassword(event.target.value)}
+                    placeholder="当前密码（修改时填写）"
+                    className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
                   />
-                启用管理员认证
-              </label>
-              <div className="rounded-lg border dsa-theme-border-subtle bg-white px-3 py-2 text-xs text-slate-600">
-                当前状态：{authStatusQuery.data?.loggedIn ? '已登录' : '未登录'} · 密码{authStatusQuery.data?.passwordSet ? '已设置' : '未设置'}
+                  <input
+                    type="password"
+                    value={authPassword}
+                    onChange={(event) => setAuthPassword(event.target.value)}
+                    placeholder="新密码（可选）"
+                    className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
+                  />
+                  <input
+                    type="password"
+                    value={authPasswordConfirm}
+                    onChange={(event) => setAuthPasswordConfirm(event.target.value)}
+                    placeholder="确认新密码"
+                    className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => void handleSaveAuthSettings()}
+                  className="mt-3 rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
+                  disabled={authUpdateMutation.isPending}
+                  data-testid="settings-auth-save"
+                >
+                  {authUpdateMutation.isPending ? '保存中...' : '保存认证设置'}
+                </button>
+                {authFeedback ? (
+                  <p className={`mt-2 text-sm font-medium ${authFeedback.kind === 'success' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                    {authFeedback.message}
+                  </p>
+                ) : null}
+              </section>
+
+              <section className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-[var(--dsa-card-padding)]" data-testid="settings-env-panel">
+                <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">桌面端 .env 导入导出</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleExportDesktopEnv()}
+                    className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft disabled:opacity-60"
+                    disabled={exportEnvMutation.isPending}
+                    data-testid="settings-export-env"
+                  >
+                    {exportEnvMutation.isPending ? '导出中...' : '导出 .env'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => importInputRef.current?.click()}
+                    className="rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
+                    disabled={importEnvMutation.isPending}
+                    data-testid="settings-import-env"
+                  >
+                    {importEnvMutation.isPending ? '导入中...' : '导入 .env'}
+                  </button>
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept=".env,.txt"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      event.target.value = ''
+                      if (file) {
+                        void handleImportDesktopEnv(file)
+                      }
+                    }}
+                  />
+                </div>
+                {desktopFeedback ? (
+                  <p className={`mt-2 text-sm font-medium ${desktopFeedback.kind === 'success' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                    {desktopFeedback.message}
+                  </p>
+                ) : null}
+              </section>
+            </>
+          ) : null}
+
+          {showAiModelSections ? (
+            <section className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-[var(--dsa-card-padding)]" data-testid="settings-llm-panel">
+              <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">LLM 渠道连通性测试</p>
+              <div className="mt-3 grid gap-2 md:grid-cols-2">
+                <input
+                  value={channelName}
+                  onChange={(event) => setChannelName(event.target.value)}
+                  placeholder="渠道名称"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
+                />
+                <input
+                  value={channelProtocol}
+                  onChange={(event) => setChannelProtocol(event.target.value)}
+                  placeholder="协议（openai / anthropic ...）"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
+                />
+                <input
+                  value={channelBaseUrl}
+                  onChange={(event) => setChannelBaseUrl(event.target.value)}
+                  placeholder="Base URL（可选）"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
+                />
+                <input
+                  value={channelApiKey}
+                  onChange={(event) => setChannelApiKey(event.target.value)}
+                  placeholder="API Key（可选）"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
+                />
               </div>
-            </div>
-
-            <div className="mt-3 grid gap-2 md:grid-cols-3">
               <input
-                type="password"
-                value={authCurrentPassword}
-                onChange={(event) => setAuthCurrentPassword(event.target.value)}
-                placeholder="当前密码（修改时填写）"
-                className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
+                value={channelModels}
+                onChange={(event) => setChannelModels(event.target.value)}
+                placeholder="模型列表，逗号分隔"
+                className="mt-2 w-full rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
               />
-              <input
-                type="password"
-                value={authPassword}
-                onChange={(event) => setAuthPassword(event.target.value)}
-                placeholder="新密码（可选）"
-                className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
-              />
-              <input
-                type="password"
-                value={authPasswordConfirm}
-                onChange={(event) => setAuthPasswordConfirm(event.target.value)}
-                placeholder="确认新密码"
-                className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => void handleSaveAuthSettings()}
-              className="mt-3 rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
-              disabled={authUpdateMutation.isPending}
-              data-testid="settings-auth-save"
-            >
-              {authUpdateMutation.isPending ? '保存中...' : '保存认证设置'}
-            </button>
-            {authFeedback ? (
-              <p className={`mt-2 text-sm font-medium ${authFeedback.kind === 'success' ? 'text-emerald-700' : 'text-rose-700'}`}>
-                {authFeedback.message}
-              </p>
-            ) : null}
-          </section>
-
-          <section className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-[var(--dsa-card-padding)]">
-            <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">桌面端 .env 导入导出</p>
-            <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => void handleExportDesktopEnv()}
-                className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft disabled:opacity-60"
-                disabled={exportEnvMutation.isPending}
-                data-testid="settings-export-env"
+                onClick={() => void handleTestChannel()}
+                className="mt-3 rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
+                disabled={testChannelMutation.isPending}
+                data-testid="settings-test-channel"
               >
-                {exportEnvMutation.isPending ? '导出中...' : '导出 .env'}
+                {testChannelMutation.isPending ? '测试中...' : '测试渠道'}
               </button>
-              <button
-                type="button"
-                onClick={() => importInputRef.current?.click()}
-                className="rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
-                disabled={importEnvMutation.isPending}
-                data-testid="settings-import-env"
-              >
-                {importEnvMutation.isPending ? '导入中...' : '导入 .env'}
-              </button>
-              <input
-                ref={importInputRef}
-                type="file"
-                accept=".env,.txt"
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0]
-                  event.target.value = ''
-                  if (file) {
-                    void handleImportDesktopEnv(file)
-                  }
-                }}
-              />
-            </div>
-            {desktopFeedback ? (
-              <p className={`mt-2 text-sm font-medium ${desktopFeedback.kind === 'success' ? 'text-emerald-700' : 'text-rose-700'}`}>
-                {desktopFeedback.message}
-              </p>
-            ) : null}
-          </section>
-
-          <section className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-[var(--dsa-card-padding)]">
-            <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">LLM 渠道连通性测试</p>
-            <div className="mt-3 grid gap-2 md:grid-cols-2">
-              <input
-                value={channelName}
-                onChange={(event) => setChannelName(event.target.value)}
-                placeholder="渠道名称"
-                className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
-              />
-              <input
-                value={channelProtocol}
-                onChange={(event) => setChannelProtocol(event.target.value)}
-                placeholder="协议（openai / anthropic ...）"
-                className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
-              />
-              <input
-                value={channelBaseUrl}
-                onChange={(event) => setChannelBaseUrl(event.target.value)}
-                placeholder="Base URL（可选）"
-                className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
-              />
-              <input
-                value={channelApiKey}
-                onChange={(event) => setChannelApiKey(event.target.value)}
-                placeholder="API Key（可选）"
-                className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
-              />
-            </div>
-            <input
-              value={channelModels}
-              onChange={(event) => setChannelModels(event.target.value)}
-              placeholder="模型列表，逗号分隔"
-              className="mt-2 w-full rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
-            />
-            <button
-              type="button"
-              onClick={() => void handleTestChannel()}
-              className="mt-3 rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
-              disabled={testChannelMutation.isPending}
-              data-testid="settings-test-channel"
-            >
-              {testChannelMutation.isPending ? '测试中...' : '测试渠道'}
-            </button>
-            {channelFeedback ? (
-              <p className={`mt-2 text-sm font-medium ${channelFeedback.kind === 'success' ? 'text-emerald-700' : 'text-rose-700'}`}>
-                {channelFeedback.message}
-              </p>
-            ) : null}
-            {channelResult ? (
-              <p className="mt-1 text-xs text-slate-600">
-                协议：{channelResult.resolvedProtocol || '--'} · 模型：{channelResult.resolvedModel || '--'} · 延迟：{channelResult.latencyMs ?? '--'}ms
-              </p>
-            ) : null}
-          </section>
+              {channelFeedback ? (
+                <p className={`mt-2 text-sm font-medium ${channelFeedback.kind === 'success' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                  {channelFeedback.message}
+                </p>
+              ) : null}
+              {channelResult ? (
+                <p className="mt-1 text-xs text-slate-600">
+                  协议：{channelResult.resolvedProtocol || '--'} · 模型：{channelResult.resolvedModel || '--'} · 延迟：{channelResult.latencyMs ?? '--'}ms
+                </p>
+              ) : null}
+            </section>
+          ) : null}
         </div>
       </div>
 

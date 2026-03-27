@@ -21,6 +21,9 @@ describe('Settings workspace', () => {
     await user.click(screen.getByTestId('settings-category-ui'))
     expect(await screen.findByTestId('settings-ui-panel')).toBeInTheDocument()
     expect(screen.getByText('Theme')).toBeInTheDocument()
+    expect(screen.queryByTestId('settings-auth-panel')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('settings-env-panel')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('settings-llm-panel')).not.toBeInTheDocument()
 
     await user.click(screen.getByTestId('settings-ui-theme-mint'))
     expect(document.documentElement).toHaveAttribute('data-theme', 'mint')
@@ -36,12 +39,14 @@ describe('Settings workspace', () => {
     await user.click(screen.getByTestId('settings-save'))
     expect(await screen.findByText(/配置已保存/)).toBeInTheDocument()
 
+    await user.click(screen.getByTestId('settings-category-system'))
+    expect(await screen.findByTestId('settings-auth-panel')).toBeInTheDocument()
+    expect(screen.getByTestId('settings-env-panel')).toBeInTheDocument()
+    expect(screen.queryByTestId('settings-llm-panel')).not.toBeInTheDocument()
+
     await user.click(screen.getByTestId('settings-auth-toggle'))
     await user.click(screen.getByTestId('settings-auth-save'))
     expect(await screen.findByText('认证设置已更新。')).toBeInTheDocument()
-
-    await user.click(screen.getByTestId('settings-test-channel'))
-    expect(await screen.findByText(/测试成功/)).toBeInTheDocument()
 
     await user.click(screen.getByTestId('settings-export-env'))
     expect(createObjectUrlSpy).toHaveBeenCalledTimes(1)
@@ -51,6 +56,13 @@ describe('Settings workspace', () => {
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
     await user.upload(fileInput, new File(['ENABLE_NOTIFY=true'], 'backup.env', { type: 'text/plain' }))
     expect(await screen.findByText('已导入 .env 备份并刷新配置。')).toBeInTheDocument()
+
+    await user.click(screen.getByTestId('settings-category-ai_model'))
+    expect(await screen.findByTestId('settings-llm-panel')).toBeInTheDocument()
+    expect(screen.queryByTestId('settings-auth-panel')).not.toBeInTheDocument()
+
+    await user.click(screen.getByTestId('settings-test-channel'))
+    expect(await screen.findByText(/测试成功/)).toBeInTheDocument()
 
     createObjectUrlSpy.mockRestore()
     revokeObjectUrlSpy.mockRestore()

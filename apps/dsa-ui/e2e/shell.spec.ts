@@ -460,6 +460,77 @@ test('main workspace pages keep visible title and summary in shell header @visua
 })
 
 test('settings page supports local theme switching and persistence @visual', async ({ page }) => {
+  await page.route('**/api/v1/system/config**', (route) =>
+    route.fulfill({
+      json: {
+        config_version: 'mock-v1',
+        mask_token: '******',
+        items: [
+          {
+            key: 'STOCK_LIST',
+            value: '600519,AAPL',
+            raw_value_exists: true,
+            is_masked: false,
+            schema: {
+              key: 'STOCK_LIST',
+              title: '关注股票',
+              description: '默认股票池',
+              category: 'base',
+              data_type: 'string',
+              ui_control: 'textarea',
+              is_sensitive: false,
+              is_required: false,
+              is_editable: true,
+              options: [],
+              validation: {},
+              display_order: 1,
+            },
+          },
+          {
+            key: 'OPENAI_MODEL',
+            value: 'gpt-4o-mini',
+            raw_value_exists: true,
+            is_masked: false,
+            schema: {
+              key: 'OPENAI_MODEL',
+              title: '默认模型',
+              description: '默认推理模型',
+              category: 'ai_model',
+              data_type: 'string',
+              ui_control: 'text',
+              is_sensitive: false,
+              is_required: true,
+              is_editable: true,
+              options: [],
+              validation: {},
+              display_order: 20,
+            },
+          },
+          {
+            key: 'ADMIN_AUTH_ENABLED',
+            value: 'true',
+            raw_value_exists: true,
+            is_masked: false,
+            schema: {
+              key: 'ADMIN_AUTH_ENABLED',
+              title: '启用认证',
+              description: '是否开启管理员认证',
+              category: 'system',
+              data_type: 'boolean',
+              ui_control: 'switch',
+              is_sensitive: false,
+              is_required: false,
+              is_editable: true,
+              options: [],
+              validation: {},
+              display_order: 30,
+            },
+          },
+        ],
+      },
+    }),
+  )
+
   await page.goto('/settings')
 
   await expect(page.getByTestId('page-settings')).toBeVisible()
@@ -468,6 +539,9 @@ test('settings page supports local theme switching and persistence @visual', asy
   await page.getByTestId('settings-category-ui').click()
   await expect(page.getByTestId('settings-ui-panel')).toBeVisible()
   await expect(page.getByTestId('settings-ui-theme-rose')).toContainText('当前主题')
+  await expect(page.getByTestId('settings-auth-panel')).toHaveCount(0)
+  await expect(page.getByTestId('settings-env-panel')).toHaveCount(0)
+  await expect(page.getByTestId('settings-llm-panel')).toHaveCount(0)
 
   await page.getByTestId('settings-ui-theme-mint').click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'mint')
@@ -480,6 +554,16 @@ test('settings page supports local theme switching and persistence @visual', asy
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'mint')
   await page.getByTestId('settings-category-ui').click()
   await expect(page.getByTestId('settings-ui-theme-mint')).toContainText('当前主题')
+
+  await page.getByTestId('settings-category-system').click()
+  await expect(page.getByTestId('settings-auth-panel')).toBeVisible()
+  await expect(page.getByTestId('settings-env-panel')).toBeVisible()
+  await expect(page.getByTestId('settings-llm-panel')).toHaveCount(0)
+
+  await page.getByTestId('settings-category-ai_model').click()
+  await expect(page.getByTestId('settings-llm-panel')).toBeVisible()
+  await expect(page.getByTestId('settings-auth-panel')).toHaveCount(0)
+  await expect(page.getByTestId('settings-env-panel')).toHaveCount(0)
 })
 
 test('mobile bottom tab navigation works @visual', async ({ page }) => {
