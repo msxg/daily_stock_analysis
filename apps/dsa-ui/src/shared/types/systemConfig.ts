@@ -6,6 +6,7 @@ export type SystemConfigCategory =
   | 'system'
   | 'agent'
   | 'backtest'
+  | 'ui'
   | 'uncategorized'
 
 export type SystemConfigDataType =

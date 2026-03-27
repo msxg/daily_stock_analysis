@@ -106,7 +106,7 @@ describe('App shell routing', () => {
     expect(await screen.findByTestId('page-settings')).toBeInTheDocument()
     expect(screen.getByTestId('page-title-settings')).not.toBeVisible()
     expect(screen.getByTestId('shell-page-description')).toHaveTextContent(
-      '支持分类导航、字段搜索、配置校验、认证管理、渠道测试和桌面端 env 导入导出。',
+      '支持分类导航、Theme 切换、配置校验、认证管理、渠道测试和桌面端 env 导入导出。',
     )
   })
 })

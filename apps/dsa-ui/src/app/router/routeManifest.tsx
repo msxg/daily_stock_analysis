@@ -48,7 +48,7 @@ export const navRoutes: NavRoute[] = [
     path: '/settings',
     label: '设置',
     shortLabel: '设置',
-    description: '支持分类导航、字段搜索、配置校验、认证管理、渠道测试和桌面端 env 导入导出。',
+    description: '支持分类导航、Theme 切换、配置校验、认证管理、渠道测试和桌面端 env 导入导出。',
     icon: Settings2,
   },
 ]

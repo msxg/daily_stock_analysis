@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### 新功能
 
+- 🎨 **`dsa-ui` 新增双主题架构与设置页 Theme 切换** — `apps/dsa-ui` 现已建立可扩展的主题运行时层，默认保留当前玫瑰红主调，并新增“浅绿”主题；主题通过 `document[data-theme] + localStorage` 持久化驱动，工作区、登录页与 `lightweight-charts` 图表统一跟随切换；同时在“设置 > UI > Theme”中加入本地即时切换入口，无需改动任何后端 API。
 - 🧱 **新增 `apps/dsa-ui` Alpha 重构前端工作区** — 启动独立于 `apps/dsa-web` 的新 UI 工程（React 19 + Vite 8 + TypeScript），落地响应式应用壳层（桌面侧栏/移动底栏）、功能页骨架（分析台/问股/持仓/回测/设置/登录）、`lightweight-charts` 图表封装以及 `Vitest + RTL + MSW + Playwright + axe + 性能阈值` 测试基线；构建产物暂输出到 `static-ui-preview/` 以支持并行联调和可回滚切换。
 - 🔌 **`dsa-ui` 接入分析台 API 最小闭环** — 新增 `shared/api` 与 `shared/types` 基础层并迁移 `analysis/history` 关键接口，分析台已支持“提交分析（含通知开关）-> 刷新历史 -> 查看报告摘要”的端到端流程；同时补齐 Dashboard API 集成测试与 API/校验工具单测。
 - 🧭 **`dsa-ui` 分析台完成 Phase 1 核心交互** — 分析台新增任务状态面板、历史管理模式（多选/全选/批量删除）、报告快捷操作条（复制摘要/查看 Markdown/追问 AI）、报告 Tabs（总览/策略点位/资讯/透明度/Markdown）和移动端“历史/报告”双视图切换，并保持后端 API 契约不变（复用 `/api/v1/history*`、`/api/v1/analysis/tasks`）。
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### 修复
 
+- 🎨 **`dsa-ui` 主视觉试切为暖红主调** — 将工作区与登录页的主强调色从浅绿系切换为暖红/玫瑰红系，统一更新导航激活态、主按钮、输入焦点、状态面板、背景氛围渐变与 `lightweight-charts` 图表线色，让整套界面更偏暖色金融仪表盘风格。
 - 🚪 **`dsa-ui` 新增壳层“退出登录”入口** — 在工作区顶部加入统一的“退出登录”按钮，调用 `/api/v1/auth/logout` 后会清理前端缓存并立即跳转登录页，补齐“已登录后缺少主动退出入口”的体验缺口。
 - 🔐 **`dsa-ui` 启用管理员认证后强制登录守卫** — 新增前端路由认证门禁：当 `/api/v1/auth/status` 返回 `auth_enabled=true` 且 `logged_in=false` 时，工作区路由会立即跳转 `/login`，避免“已开启认证但仍可直接进入主界面”的绕过体验；登录页在已登录状态下也会自动回跳原始目标页面。
 - 🧭 **`dsa-ui` 默认构建输出切换为 `static/`** — `npm run build` 现在默认直接输出到根目录 `static/`（覆盖旧前端产物）以符合接管部署预期；并保留 `npm run build:preview` 输出到 `static-ui-preview/` 作为并行预览与回滚验证路径。

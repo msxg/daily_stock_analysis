@@ -151,7 +151,7 @@ export function BacktestPage() {
 
   return (
     <section className="space-y-3" data-testid="page-backtest">
-      <header className="rounded-2xl border border-teal-900/10 bg-white/80 p-4">
+      <header className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4">
         <h2 hidden data-testid="page-title-backtest">
           回测
         </h2>
@@ -161,7 +161,7 @@ export function BacktestPage() {
             value={codeInput}
             onChange={(event) => setCodeInput(event.target.value.toUpperCase())}
             placeholder="股票代码（留空代表全量）"
-            className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm text-slate-800"
+            className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800"
             data-testid="backtest-code-input"
           />
           <input
@@ -171,17 +171,17 @@ export function BacktestPage() {
             type="number"
             min={1}
             max={120}
-            className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm text-slate-800"
+            className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800"
             data-testid="backtest-window-input"
           />
-          <label className="inline-flex items-center gap-2 rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-xs text-slate-700">
+          <label className="inline-flex items-center gap-2 rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-xs text-slate-700">
             <input type="checkbox" checked={forceRun} onChange={(event) => setForceRun(event.target.checked)} />
             强制重跑
           </label>
           <button
             type="button"
             onClick={handleApplyFilter}
-            className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-teal-50"
+            className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft"
             data-testid="backtest-filter-submit"
           >
             应用筛选
@@ -189,7 +189,7 @@ export function BacktestPage() {
           <button
             type="button"
             onClick={() => void handleRunBacktest()}
-            className="rounded-lg border border-teal-900/15 bg-teal-500/12 px-3 py-2 text-xs font-semibold text-teal-900 transition hover:bg-teal-500/18 disabled:opacity-60"
+            className="rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
             disabled={runMutation.isPending}
             data-testid="backtest-run-submit"
           >
@@ -204,7 +204,7 @@ export function BacktestPage() {
         ) : null}
 
         {runSummary ? (
-          <div className="mt-3 grid gap-2 rounded-xl border border-teal-900/10 bg-white p-3 text-xs text-slate-700 md:grid-cols-5" data-testid="backtest-run-summary">
+          <div className="mt-3 grid gap-2 rounded-xl border dsa-theme-border-subtle bg-white p-3 text-xs text-slate-700 md:grid-cols-5" data-testid="backtest-run-summary">
             <p>Processed: {runSummary.processed}</p>
             <p>Saved: {runSummary.saved}</p>
             <p>Completed: {runSummary.completed}</p>
@@ -215,21 +215,21 @@ export function BacktestPage() {
       </header>
 
       <section className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
-        <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-3">
+        <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-3">
           <p className="text-xs text-slate-500">方向准确率</p>
           <p className="mt-1 text-xl font-semibold text-slate-900" data-testid="backtest-kpi-accuracy">
             {pct(overallPerfQuery.data?.directionAccuracyPct)}
           </p>
         </article>
-        <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-3">
+        <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-3">
           <p className="text-xs text-slate-500">胜率</p>
           <p className="mt-1 text-xl font-semibold text-slate-900">{pct(overallPerfQuery.data?.winRatePct)}</p>
         </article>
-        <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-3">
+        <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-3">
           <p className="text-xs text-slate-500">平均模拟收益</p>
           <p className="mt-1 text-xl font-semibold text-slate-900">{pct(overallPerfQuery.data?.avgSimulatedReturnPct)}</p>
         </article>
-        <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-3">
+        <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-3">
           <p className="text-xs text-slate-500">样本数</p>
           <p className="mt-1 text-xl font-semibold text-slate-900">
             {overallPerfQuery.data?.completedCount ?? 0} / {overallPerfQuery.data?.totalEvaluations ?? 0}
@@ -238,27 +238,27 @@ export function BacktestPage() {
       </section>
 
       <section className="grid gap-3 xl:grid-cols-2">
-        <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-4" data-testid="backtest-chart-overall">
-          <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">全局表现趋势（累计均值）</p>
+        <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4" data-testid="backtest-chart-overall">
+          <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">全局表现趋势（累计均值）</p>
           <p className="mt-1 text-xs text-slate-500">基于当前筛选结果按日期构建。</p>
           {overallTrend.length > 1 ? <AreaTrendChart data={overallTrend} className="mt-3 w-full" /> : <p className="mt-3 text-sm text-slate-600">暂无趋势数据。</p>}
         </article>
 
-        <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-4" data-testid="backtest-chart-stock">
-          <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">单股对比趋势</p>
+        <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4" data-testid="backtest-chart-stock">
+          <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">单股对比趋势</p>
           <p className="mt-1 text-xs text-slate-500">当前聚焦：{focusCode || '暂无'}</p>
           {stockTrend.length > 1 ? <AreaTrendChart data={stockTrend} className="mt-3 w-full" /> : <p className="mt-3 text-sm text-slate-600">暂无单股趋势数据。</p>}
           {stockPerfQuery.data ? (
-            <div className="mt-3 rounded-lg border border-teal-900/10 bg-white p-3 text-xs text-slate-700">
+            <div className="mt-3 rounded-lg border dsa-theme-border-subtle bg-white p-3 text-xs text-slate-700">
               方向准确率 {pct(stockPerfQuery.data.directionAccuracyPct)} · 胜率 {pct(stockPerfQuery.data.winRatePct)} · 样本 {stockPerfQuery.data.completedCount}
             </div>
           ) : null}
         </article>
       </section>
 
-      <section className="rounded-2xl border border-teal-900/10 bg-white/80 p-4">
+      <section className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">回测结果</p>
+          <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">回测结果</p>
           <p className="text-xs text-slate-500">
             共 {totalItems} 条 · 第 {currentPage} / {totalPages} 页
           </p>
@@ -271,7 +271,7 @@ export function BacktestPage() {
         {resultItems.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="mt-2 w-full min-w-[920px] text-sm" data-testid="backtest-results-table">
-              <thead className="border-b border-teal-900/10 text-xs text-slate-500">
+              <thead className="border-b dsa-theme-border-subtle text-xs text-slate-500">
                 <tr>
                   <th className="py-2 text-left">代码</th>
                   <th className="py-2 text-left">日期</th>
@@ -283,7 +283,7 @@ export function BacktestPage() {
               </thead>
               <tbody>
                 {resultItems.map((row) => (
-                  <tr key={row.analysisHistoryId} className="border-b border-teal-900/5">
+                  <tr key={row.analysisHistoryId} className="border-b dsa-theme-border-subtle">
                     <td className="py-2 font-mono text-slate-900">{row.code}</td>
                     <td className="py-2 text-slate-700">{row.analysisDate || '--'}</td>
                     <td className="max-w-[360px] truncate py-2 text-slate-700" title={row.operationAdvice || ''}>
@@ -309,7 +309,7 @@ export function BacktestPage() {
           <button
             type="button"
             onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-            className="rounded-md border border-teal-900/15 bg-white px-2 py-1 text-xs font-semibold text-slate-700 disabled:opacity-60"
+            className="rounded-md border dsa-theme-border-default bg-white px-2 py-1 text-xs font-semibold text-slate-700 disabled:opacity-60"
             disabled={currentPage <= 1}
             data-testid="backtest-page-prev"
           >
@@ -318,7 +318,7 @@ export function BacktestPage() {
           <button
             type="button"
             onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-            className="rounded-md border border-teal-900/15 bg-white px-2 py-1 text-xs font-semibold text-slate-700 disabled:opacity-60"
+            className="rounded-md border dsa-theme-border-default bg-white px-2 py-1 text-xs font-semibold text-slate-700 disabled:opacity-60"
             disabled={currentPage >= totalPages}
             data-testid="backtest-page-next"
           >

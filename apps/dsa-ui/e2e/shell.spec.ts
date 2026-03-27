@@ -454,9 +454,32 @@ test('main workspace pages keep visible title and summary in shell header @visua
   await expect(page.getByTestId('page-settings')).toBeVisible()
   await expect(page.getByRole('heading', { name: '设置', level: 1 })).toBeVisible()
   await expect(page.getByTestId('shell-page-description')).toHaveText(
-    '支持分类导航、字段搜索、配置校验、认证管理、渠道测试和桌面端 env 导入导出。',
+    '支持分类导航、Theme 切换、配置校验、认证管理、渠道测试和桌面端 env 导入导出。',
   )
   await expect(page.getByTestId('page-title-settings')).not.toBeVisible()
+})
+
+test('settings page supports local theme switching and persistence @visual', async ({ page }) => {
+  await page.goto('/settings')
+
+  await expect(page.getByTestId('page-settings')).toBeVisible()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'rose')
+
+  await page.getByTestId('settings-category-ui').click()
+  await expect(page.getByTestId('settings-ui-panel')).toBeVisible()
+  await expect(page.getByTestId('settings-ui-theme-rose')).toContainText('当前主题')
+
+  await page.getByTestId('settings-ui-theme-mint').click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'mint')
+  await expect(page.getByTestId('settings-ui-theme-mint')).toContainText('当前主题')
+
+  const storedTheme = await page.evaluate(() => window.localStorage.getItem('dsa-ui-theme'))
+  expect(storedTheme).toBe('mint')
+
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'mint')
+  await page.getByTestId('settings-category-ui').click()
+  await expect(page.getByTestId('settings-ui-theme-mint')).toContainText('当前主题')
 })
 
 test('mobile bottom tab navigation works @visual', async ({ page }) => {

@@ -435,14 +435,14 @@ export function PortfolioPage() {
     if (eventType === 'trade') {
       const trade = item as PortfolioTradeListItem
       return (
-        <div key={`trade-${trade.id}`} className="flex items-center justify-between gap-2 rounded-lg border border-teal-900/10 bg-white px-3 py-2 text-xs">
+        <div key={`trade-${trade.id}`} className="flex items-center justify-between gap-2 rounded-lg border dsa-theme-border-subtle bg-white px-3 py-2 text-xs">
           <p className="text-slate-700">
             {trade.tradeDate} · {trade.side === 'buy' ? '买入' : '卖出'} · {trade.symbol} · {trade.quantity} @ {trade.price}
           </p>
           <button
             type="button"
             onClick={() => void handleDeleteEvent('trade', trade.id)}
-            className="rounded-md border border-rose-300/80 bg-rose-50 px-2 py-1 font-semibold text-rose-700 disabled:opacity-60"
+            className="rounded-md border border-rose-300/80 dsa-theme-bg-soft px-2 py-1 font-semibold text-rose-700 disabled:opacity-60"
             disabled={deleteEventMutation.isPending || writeBlocked}
             data-testid={`portfolio-delete-trade-${trade.id}`}
           >
@@ -455,14 +455,14 @@ export function PortfolioPage() {
     if (eventType === 'cash') {
       const cash = item as PortfolioCashLedgerListItem
       return (
-        <div key={`cash-${cash.id}`} className="flex items-center justify-between gap-2 rounded-lg border border-teal-900/10 bg-white px-3 py-2 text-xs">
+        <div key={`cash-${cash.id}`} className="flex items-center justify-between gap-2 rounded-lg border dsa-theme-border-subtle bg-white px-3 py-2 text-xs">
           <p className="text-slate-700">
             {cash.eventDate} · {cash.direction === 'in' ? '流入' : '流出'} · {cash.amount} {cash.currency}
           </p>
           <button
             type="button"
             onClick={() => void handleDeleteEvent('cash', cash.id)}
-            className="rounded-md border border-rose-300/80 bg-rose-50 px-2 py-1 font-semibold text-rose-700 disabled:opacity-60"
+            className="rounded-md border border-rose-300/80 dsa-theme-bg-soft px-2 py-1 font-semibold text-rose-700 disabled:opacity-60"
             disabled={deleteEventMutation.isPending || writeBlocked}
             data-testid={`portfolio-delete-cash-${cash.id}`}
           >
@@ -474,14 +474,14 @@ export function PortfolioPage() {
 
     const corporate = item as PortfolioCorporateActionListItem
     return (
-      <div key={`corporate-${corporate.id}`} className="flex items-center justify-between gap-2 rounded-lg border border-teal-900/10 bg-white px-3 py-2 text-xs">
+      <div key={`corporate-${corporate.id}`} className="flex items-center justify-between gap-2 rounded-lg border dsa-theme-border-subtle bg-white px-3 py-2 text-xs">
         <p className="text-slate-700">
           {corporate.effectiveDate} · {corporate.symbol} · {corporate.actionType === 'cash_dividend' ? '现金分红' : '拆并股调整'}
         </p>
         <button
           type="button"
           onClick={() => void handleDeleteEvent('corporate', corporate.id)}
-          className="rounded-md border border-rose-300/80 bg-rose-50 px-2 py-1 font-semibold text-rose-700 disabled:opacity-60"
+          className="rounded-md border border-rose-300/80 dsa-theme-bg-soft px-2 py-1 font-semibold text-rose-700 disabled:opacity-60"
           disabled={deleteEventMutation.isPending || writeBlocked}
           data-testid={`portfolio-delete-corporate-${corporate.id}`}
         >
@@ -493,7 +493,7 @@ export function PortfolioPage() {
 
   return (
     <section className="space-y-3" data-testid="page-portfolio">
-      <header className="rounded-2xl border border-teal-900/10 bg-white/80 p-4">
+      <header className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4">
         <h2 hidden data-testid="page-title-portfolio">
           持仓
         </h2>
@@ -502,7 +502,7 @@ export function PortfolioPage() {
           <button
             type="button"
             onClick={() => void refreshAll()}
-            className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-teal-50 disabled:opacity-60"
+            className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft disabled:opacity-60"
             disabled={
               accountsQuery.isFetching || snapshotQuery.isFetching || riskQuery.isFetching || eventsQuery.isFetching
             }
@@ -521,7 +521,7 @@ export function PortfolioPage() {
                 setSelectedAccount(event.target.value === 'all' ? 'all' : Number(event.target.value))
                 setEventPage(1)
               }}
-              className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm text-slate-800"
+              className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800"
               data-testid="portfolio-account-select"
             >
               <option value="all">全部账户</option>
@@ -538,7 +538,7 @@ export function PortfolioPage() {
             <select
               value={costMethod}
               onChange={(event) => setCostMethod(event.target.value as PortfolioCostMethod)}
-              className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm text-slate-800"
+              className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800"
               data-testid="portfolio-cost-method"
             >
               <option value="fifo">先进先出（FIFO）</option>
@@ -549,14 +549,14 @@ export function PortfolioPage() {
           <button
             type="button"
             onClick={() => void handleRefreshFx()}
-            className="self-end rounded-lg border border-teal-900/15 bg-teal-500/12 px-3 py-2 text-xs font-semibold text-teal-900 transition hover:bg-teal-500/18 disabled:opacity-60"
+            className="self-end rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
             disabled={refreshFxMutation.isPending || snapshotQuery.isFetching}
             data-testid="portfolio-fx-refresh"
           >
             {refreshFxMutation.isPending ? '刷新中...' : '刷新汇率'}
           </button>
 
-          <div className="self-end rounded-lg border border-teal-900/10 bg-teal-50/70 px-3 py-2 text-xs text-slate-700">
+          <div className="self-end rounded-lg border dsa-theme-border-subtle dsa-theme-bg-soft-70 px-3 py-2 text-xs text-slate-700">
             写入范围：
             {effectiveSelectedAccount === 'all' ? '全部账户（禁写）' : `账户 #${effectiveSelectedAccount}`}
           </div>
@@ -587,8 +587,8 @@ export function PortfolioPage() {
             aria-pressed={activeTab === tab.id}
             className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
               activeTab === tab.id
-                ? 'border-teal-500/35 bg-teal-500/12 text-teal-900 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.22)]'
-                : 'border-teal-900/10 bg-white text-slate-600 hover:bg-teal-50'
+                ? 'dsa-theme-border-accent dsa-theme-bg-accent dsa-theme-text-accent dsa-theme-shadow-active'
+                : 'dsa-theme-border-subtle bg-white text-slate-600 hover:dsa-theme-bg-soft'
             }`}
             data-testid={`portfolio-tab-${tab.id}`}
           >
@@ -600,43 +600,43 @@ export function PortfolioPage() {
       {activeTab === 'overview' ? (
         <section className="grid gap-3 xl:grid-cols-[minmax(0,1.75fr)_minmax(270px,1fr)]">
           <div className="space-y-3">
-            <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">账户总览</p>
+            <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4">
+              <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">账户总览</p>
               <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-xl border border-teal-900/10 bg-white p-3">
+                <div className="rounded-xl border dsa-theme-border-subtle bg-white p-3">
                   <p className="text-xs text-slate-500">总权益</p>
                   <p className="mt-1 text-sm font-semibold text-slate-900">{formatMoney(snapshotQuery.data?.totalEquity, snapshotQuery.data?.currency || 'CNY')}</p>
                 </div>
-                <div className="rounded-xl border border-teal-900/10 bg-white p-3">
+                <div className="rounded-xl border dsa-theme-border-subtle bg-white p-3">
                   <p className="text-xs text-slate-500">总市值</p>
                   <p className="mt-1 text-sm font-semibold text-slate-900">{formatMoney(snapshotQuery.data?.totalMarketValue, snapshotQuery.data?.currency || 'CNY')}</p>
                 </div>
-                <div className="rounded-xl border border-teal-900/10 bg-white p-3">
+                <div className="rounded-xl border dsa-theme-border-subtle bg-white p-3">
                   <p className="text-xs text-slate-500">总现金</p>
                   <p className="mt-1 text-sm font-semibold text-slate-900">{formatMoney(snapshotQuery.data?.totalCash, snapshotQuery.data?.currency || 'CNY')}</p>
                 </div>
-                <div className="rounded-xl border border-teal-900/10 bg-white p-3">
+                <div className="rounded-xl border dsa-theme-border-subtle bg-white p-3">
                   <p className="text-xs text-slate-500">汇率状态</p>
                   <p className="mt-1 text-sm font-semibold text-slate-900">{snapshotQuery.data?.fxStale ? '存在过期汇率' : '汇率最新'}</p>
                 </div>
               </div>
             </article>
 
-            <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-4">
+            <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4">
               <div className="flex items-center justify-between">
-                <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">风险提示</p>
+                <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">风险提示</p>
                 <p className="text-xs text-slate-500">成本法：{costMethod.toUpperCase()}</p>
               </div>
               <div className="mt-3 grid gap-3 md:grid-cols-3">
-                <div className="rounded-xl border border-teal-900/10 bg-white p-3">
+                <div className="rounded-xl border dsa-theme-border-subtle bg-white p-3">
                   <p className="text-xs text-slate-500">最大回撤</p>
                   <p className="mt-1 text-sm font-semibold text-slate-900">{formatPct(riskQuery.data?.drawdown.maxDrawdownPct)}</p>
                 </div>
-                <div className="rounded-xl border border-teal-900/10 bg-white p-3">
+                <div className="rounded-xl border dsa-theme-border-subtle bg-white p-3">
                   <p className="text-xs text-slate-500">当前回撤</p>
                   <p className="mt-1 text-sm font-semibold text-slate-900">{formatPct(riskQuery.data?.drawdown.currentDrawdownPct)}</p>
                 </div>
-                <div className="rounded-xl border border-teal-900/10 bg-white p-3">
+                <div className="rounded-xl border dsa-theme-border-subtle bg-white p-3">
                   <p className="text-xs text-slate-500">止损触发数</p>
                   <p className="mt-1 text-sm font-semibold text-slate-900">{riskQuery.data?.stopLoss.triggeredCount ?? 0}</p>
                 </div>
@@ -644,31 +644,31 @@ export function PortfolioPage() {
             </article>
           </div>
 
-          <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">集中度 Top</p>
+          <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4">
+            <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">集中度 Top</p>
             <div className="mt-3 space-y-3">
               {topExposureRows.length === 0 ? <p className="text-sm text-slate-600">暂无集中度数据。</p> : null}
               {topExposureRows.map((row) => (
                 <div key={row.symbol}>
                   <div className="mb-1 flex items-center justify-between text-sm">
                     <span className="text-slate-700">{row.symbol}</span>
-                    <span className="font-semibold text-teal-900">{row.weightPct.toFixed(2)}%</span>
+                    <span className="font-semibold dsa-theme-text-accent">{row.weightPct.toFixed(2)}%</span>
                   </div>
-                  <div className="h-2 rounded-full bg-teal-100">
-                    <div className="h-2 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500" style={{ width: `${Math.min(row.weightPct, 100)}%` }} />
+                  <div className="h-2 rounded-full dsa-theme-bg-soft">
+                    <div className="h-2 rounded-full dsa-theme-gradient-inline" style={{ width: `${Math.min(row.weightPct, 100)}%` }} />
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-5 rounded-xl border border-teal-900/10 bg-white p-3">
+            <div className="mt-5 rounded-xl border dsa-theme-border-subtle bg-white p-3">
               <p className="text-xs uppercase tracking-[0.12em] text-slate-500">新建账户</p>
               <div className="mt-2 grid gap-2">
                 <input
                   value={createAccountForm.name}
                   onChange={(event) => setCreateAccountForm((previous) => ({ ...previous, name: event.target.value }))}
                   placeholder="账户名称（必填）"
-                  className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm text-slate-800"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800"
                   data-testid="portfolio-create-account-name"
                 />
                 <div className="grid grid-cols-2 gap-2">
@@ -676,13 +676,13 @@ export function PortfolioPage() {
                     value={createAccountForm.broker}
                     onChange={(event) => setCreateAccountForm((previous) => ({ ...previous, broker: event.target.value }))}
                     placeholder="券商"
-                    className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm text-slate-800"
+                    className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800"
                   />
                   <input
                     value={createAccountForm.baseCurrency}
                     onChange={(event) => setCreateAccountForm((previous) => ({ ...previous, baseCurrency: event.target.value.toUpperCase() }))}
                     placeholder="基准币种"
-                    className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm text-slate-800"
+                    className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -691,7 +691,7 @@ export function PortfolioPage() {
                     onChange={(event) =>
                       setCreateAccountForm((previous) => ({ ...previous, market: event.target.value as 'cn' | 'hk' | 'us' }))
                     }
-                    className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm text-slate-800"
+                    className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800"
                   >
                     <option value="cn">A 股</option>
                     <option value="hk">港股</option>
@@ -700,7 +700,7 @@ export function PortfolioPage() {
                   <button
                     type="button"
                     onClick={() => void handleCreateAccount()}
-                    className="rounded-lg border border-teal-900/15 bg-teal-500/12 px-3 py-2 text-xs font-semibold text-teal-900 transition hover:bg-teal-500/18 disabled:opacity-60"
+                    className="rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
                     disabled={createAccountMutation.isPending}
                     data-testid="portfolio-create-account-submit"
                   >
@@ -714,16 +714,16 @@ export function PortfolioPage() {
       ) : null}
 
       {activeTab === 'holdings' ? (
-        <section className="rounded-2xl border border-teal-900/10 bg-white/80 p-4">
+        <section className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">持仓明细</p>
+            <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">持仓明细</p>
             <span className="text-xs text-slate-500">共 {positions.length} 条</span>
           </div>
           {positions.length === 0 ? <p className="text-sm text-slate-600">当前无持仓数据。</p> : null}
           {positions.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[780px] text-sm" data-testid="portfolio-holdings-table">
-                <thead className="border-b border-teal-900/10 text-xs text-slate-500">
+                <thead className="border-b dsa-theme-border-subtle text-xs text-slate-500">
                   <tr>
                     <th className="py-2 text-left">账户</th>
                     <th className="py-2 text-left">代码</th>
@@ -736,7 +736,7 @@ export function PortfolioPage() {
                 </thead>
                 <tbody>
                   {positions.map((position) => (
-                    <tr key={`${position.accountId}-${position.symbol}-${position.market}`} className="border-b border-teal-900/5">
+                    <tr key={`${position.accountId}-${position.symbol}-${position.market}`} className="border-b dsa-theme-border-subtle">
                       <td className="py-2 text-slate-700">{position.accountName}</td>
                       <td className="py-2 font-mono text-slate-900">{position.symbol}</td>
                       <td className="py-2 text-right">{position.quantity.toFixed(2)}</td>
@@ -757,26 +757,26 @@ export function PortfolioPage() {
 
       {activeTab === 'entry' ? (
         <section className="grid gap-3 xl:grid-cols-3">
-          <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-3">
-            <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">交易录入</p>
+          <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-3">
+            <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">交易录入</p>
             <div className="mt-3 space-y-2">
               <input
                 value={tradeForm.symbol}
                 onChange={(event) => setTradeForm((previous) => ({ ...previous, symbol: event.target.value }))}
                 placeholder="股票代码"
-                className="w-full rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
               />
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="date"
                   value={tradeForm.tradeDate}
                   onChange={(event) => setTradeForm((previous) => ({ ...previous, tradeDate: event.target.value }))}
-                  className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
                 />
                 <select
                   value={tradeForm.side}
                   onChange={(event) => setTradeForm((previous) => ({ ...previous, side: event.target.value as PortfolioSide }))}
-                  className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
                 >
                   <option value="buy">买入</option>
                   <option value="sell">卖出</option>
@@ -788,20 +788,20 @@ export function PortfolioPage() {
                   onChange={(event) => setTradeForm((previous) => ({ ...previous, quantity: event.target.value }))}
                   placeholder="数量"
                   type="number"
-                  className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
                 />
                 <input
                   value={tradeForm.price}
                   onChange={(event) => setTradeForm((previous) => ({ ...previous, price: event.target.value }))}
                   placeholder="价格"
                   type="number"
-                  className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => void handleCreateTrade()}
-                className="w-full rounded-lg border border-teal-900/15 bg-teal-500/12 px-3 py-2 text-xs font-semibold text-teal-900 transition hover:bg-teal-500/18 disabled:opacity-60"
+                className="w-full rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
                 disabled={writeBlocked || createTradeMutation.isPending}
                 data-testid="portfolio-entry-submit-trade"
               >
@@ -810,20 +810,20 @@ export function PortfolioPage() {
             </div>
           </article>
 
-          <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-3">
-            <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">资金流水录入</p>
+          <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-3">
+            <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">资金流水录入</p>
             <div className="mt-3 space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="date"
                   value={cashForm.eventDate}
                   onChange={(event) => setCashForm((previous) => ({ ...previous, eventDate: event.target.value }))}
-                  className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
                 />
                 <select
                   value={cashForm.direction}
                   onChange={(event) => setCashForm((previous) => ({ ...previous, direction: event.target.value as PortfolioCashDirection }))}
-                  className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
                 >
                   <option value="in">流入</option>
                   <option value="out">流出</option>
@@ -834,12 +834,12 @@ export function PortfolioPage() {
                 onChange={(event) => setCashForm((previous) => ({ ...previous, amount: event.target.value }))}
                 placeholder="金额"
                 type="number"
-                className="w-full rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
               />
               <button
                 type="button"
                 onClick={() => void handleCreateCash()}
-                className="w-full rounded-lg border border-teal-900/15 bg-teal-500/12 px-3 py-2 text-xs font-semibold text-teal-900 transition hover:bg-teal-500/18 disabled:opacity-60"
+                className="w-full rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
                 disabled={writeBlocked || createCashMutation.isPending}
                 data-testid="portfolio-entry-submit-cash"
               >
@@ -848,28 +848,28 @@ export function PortfolioPage() {
             </div>
           </article>
 
-          <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-3">
-            <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">公司行为录入</p>
+          <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-3">
+            <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">公司行为录入</p>
             <div className="mt-3 space-y-2">
               <input
                 value={corpForm.symbol}
                 onChange={(event) => setCorpForm((previous) => ({ ...previous, symbol: event.target.value }))}
                 placeholder="股票代码"
-                className="w-full rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
               />
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="date"
                   value={corpForm.effectiveDate}
                   onChange={(event) => setCorpForm((previous) => ({ ...previous, effectiveDate: event.target.value }))}
-                  className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
                 />
                 <select
                   value={corpForm.actionType}
                   onChange={(event) =>
                     setCorpForm((previous) => ({ ...previous, actionType: event.target.value as PortfolioCorporateActionType }))
                   }
-                  className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
                 >
                   <option value="cash_dividend">现金分红</option>
                   <option value="split_adjustment">拆并股调整</option>
@@ -881,7 +881,7 @@ export function PortfolioPage() {
                   onChange={(event) => setCorpForm((previous) => ({ ...previous, cashDividendPerShare: event.target.value, splitRatio: '' }))}
                   placeholder="每股分红"
                   type="number"
-                  className="w-full rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
                 />
               ) : (
                 <input
@@ -889,13 +889,13 @@ export function PortfolioPage() {
                   onChange={(event) => setCorpForm((previous) => ({ ...previous, splitRatio: event.target.value, cashDividendPerShare: '' }))}
                   placeholder="拆并股比例"
                   type="number"
-                  className="w-full rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
                 />
               )}
               <button
                 type="button"
                 onClick={() => void handleCreateCorporate()}
-                className="w-full rounded-lg border border-teal-900/15 bg-teal-500/12 px-3 py-2 text-xs font-semibold text-teal-900 transition hover:bg-teal-500/18 disabled:opacity-60"
+                className="w-full rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
                 disabled={writeBlocked || createCorpMutation.isPending}
                 data-testid="portfolio-entry-submit-corporate"
               >
@@ -907,13 +907,13 @@ export function PortfolioPage() {
       ) : null}
 
       {activeTab === 'import' ? (
-        <section className="rounded-2xl border border-teal-900/10 bg-white/80 p-4">
-          <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">CSV 导入</p>
+        <section className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4">
+          <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">CSV 导入</p>
           <div className="mt-3 grid gap-3 md:grid-cols-[220px_1fr_auto]">
             <select
               value={effectiveSelectedBroker}
               onChange={(event) => setSelectedBroker(event.target.value)}
-              className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+              className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
               data-testid="portfolio-import-broker"
             >
               {(brokersQuery.data?.brokers || []).map((item) => (
@@ -923,7 +923,7 @@ export function PortfolioPage() {
               ))}
             </select>
 
-            <label className="rounded-lg border border-dashed border-teal-900/20 bg-white px-3 py-2 text-sm text-slate-600">
+            <label className="rounded-lg border border-dashed dsa-theme-border-strong bg-white px-3 py-2 text-sm text-slate-600">
               选择文件：{csvFile?.name || '未选择'}
               <input
                 type="file"
@@ -934,7 +934,7 @@ export function PortfolioPage() {
               />
             </label>
 
-            <label className="inline-flex items-center gap-2 rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-xs text-slate-700">
+            <label className="inline-flex items-center gap-2 rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-xs text-slate-700">
               <input type="checkbox" checked={csvDryRun} onChange={(event) => setCsvDryRun(event.target.checked)} />
               仅预演
             </label>
@@ -944,7 +944,7 @@ export function PortfolioPage() {
             <button
               type="button"
               onClick={() => void handleParseCsv()}
-              className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-teal-50 disabled:opacity-60"
+              className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft disabled:opacity-60"
               disabled={!csvFile || parseCsvMutation.isPending}
               data-testid="portfolio-import-parse"
             >
@@ -953,7 +953,7 @@ export function PortfolioPage() {
             <button
               type="button"
               onClick={() => void handleCommitCsv()}
-              className="rounded-lg border border-teal-900/15 bg-teal-500/12 px-3 py-2 text-xs font-semibold text-teal-900 transition hover:bg-teal-500/18 disabled:opacity-60"
+              className="rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
               disabled={!csvFile || writeBlocked || commitCsvMutation.isPending}
               data-testid="portfolio-import-commit"
             >
@@ -961,15 +961,15 @@ export function PortfolioPage() {
             </button>
           </div>
 
-          {csvParseSummary ? <p className="mt-3 rounded-lg border border-teal-900/10 bg-white px-3 py-2 text-sm text-slate-700">{csvParseSummary}</p> : null}
+          {csvParseSummary ? <p className="mt-3 rounded-lg border dsa-theme-border-subtle bg-white px-3 py-2 text-sm text-slate-700">{csvParseSummary}</p> : null}
           {csvCommitSummary ? (
-            <p className="mt-2 rounded-lg border border-teal-900/10 bg-white px-3 py-2 text-sm text-slate-700">{csvCommitSummary}</p>
+            <p className="mt-2 rounded-lg border dsa-theme-border-subtle bg-white px-3 py-2 text-sm text-slate-700">{csvCommitSummary}</p>
           ) : null}
         </section>
       ) : null}
 
       {activeTab === 'events' ? (
-        <section className="rounded-2xl border border-teal-900/10 bg-white/80 p-4">
+        <section className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4">
           <div className="grid gap-3 xl:grid-cols-[180px_repeat(5,minmax(0,1fr))]">
             <select
               value={eventType}
@@ -977,7 +977,7 @@ export function PortfolioPage() {
                 setEventType(event.target.value as EventType)
                 setEventPage(1)
               }}
-              className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+              className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
               data-testid="portfolio-events-type"
             >
               <option value="trade">交易流水</option>
@@ -992,7 +992,7 @@ export function PortfolioPage() {
                 setEventDateFrom(event.target.value)
                 setEventPage(1)
               }}
-              className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+              className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
             />
             <input
               type="date"
@@ -1001,7 +1001,7 @@ export function PortfolioPage() {
                 setEventDateTo(event.target.value)
                 setEventPage(1)
               }}
-              className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+              className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
             />
             {(eventType === 'trade' || eventType === 'corporate') ? (
               <input
@@ -1011,7 +1011,7 @@ export function PortfolioPage() {
                   setEventPage(1)
                 }}
                 placeholder="代码筛选"
-                className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
               />
             ) : (
               <div />
@@ -1023,7 +1023,7 @@ export function PortfolioPage() {
                   setEventSide(event.target.value as '' | PortfolioSide)
                   setEventPage(1)
                 }}
-                className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
               >
                 <option value="">全部方向</option>
                 <option value="buy">买入</option>
@@ -1036,7 +1036,7 @@ export function PortfolioPage() {
                   setEventDirection(event.target.value as '' | PortfolioCashDirection)
                   setEventPage(1)
                 }}
-                className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
               >
                 <option value="">全部方向</option>
                 <option value="in">流入</option>
@@ -1049,7 +1049,7 @@ export function PortfolioPage() {
                   setEventActionType(event.target.value as '' | PortfolioCorporateActionType)
                   setEventPage(1)
                 }}
-                className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm"
+                className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
               >
                 <option value="">全部行为</option>
                 <option value="cash_dividend">现金分红</option>
@@ -1060,7 +1060,7 @@ export function PortfolioPage() {
             <button
               type="button"
               onClick={() => void eventsQuery.refetch()}
-              className="rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-teal-50 disabled:opacity-60"
+              className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft disabled:opacity-60"
               disabled={eventsQuery.isFetching}
               data-testid="portfolio-events-refresh"
             >
@@ -1082,7 +1082,7 @@ export function PortfolioPage() {
               <button
                 type="button"
                 onClick={() => setEventPage((page) => Math.max(1, page - 1))}
-                className="rounded-md border border-teal-900/15 bg-white px-2 py-1 font-semibold text-slate-700 disabled:opacity-60"
+                className="rounded-md border dsa-theme-border-default bg-white px-2 py-1 font-semibold text-slate-700 disabled:opacity-60"
                 disabled={eventPage <= 1}
                 data-testid="portfolio-events-prev"
               >
@@ -1091,7 +1091,7 @@ export function PortfolioPage() {
               <button
                 type="button"
                 onClick={() => setEventPage((page) => Math.min(eventPages, page + 1))}
-                className="rounded-md border border-teal-900/15 bg-white px-2 py-1 font-semibold text-slate-700 disabled:opacity-60"
+                className="rounded-md border dsa-theme-border-default bg-white px-2 py-1 font-semibold text-slate-700 disabled:opacity-60"
                 disabled={eventPage >= eventPages}
                 data-testid="portfolio-events-next"
               >

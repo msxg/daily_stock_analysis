@@ -56,7 +56,7 @@ function sentimentTone(score: number): string {
 
 function sentimentClass(score: number): string {
   if (score >= 75) return 'bg-emerald-100 text-emerald-700'
-  if (score >= 55) return 'bg-teal-100 text-teal-700'
+  if (score >= 55) return 'bg-rose-100 text-rose-700'
   if (score >= 40) return 'bg-amber-100 text-amber-700'
   return 'bg-rose-100 text-rose-700'
 }
@@ -359,7 +359,7 @@ export function DashboardPage() {
 
   return (
     <section className="space-y-4" data-testid="page-dashboard">
-      <div className="rounded-3xl border border-teal-900/10 bg-white/85 p-5 shadow-[0_20px_45px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+      <div className="rounded-3xl border dsa-theme-border-subtle bg-white/85 p-5 shadow-[0_20px_45px_rgba(15,23,42,0.08)] backdrop-blur-xl">
         <h2 hidden data-testid="page-title-dashboard">
           分析台
         </h2>
@@ -369,21 +369,21 @@ export function DashboardPage() {
             <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">股票代码 / 名称</span>
             <input
               {...register('stockCode')}
-              className="h-11 rounded-xl border border-teal-900/15 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              className="h-11 rounded-xl border dsa-theme-border-default bg-white px-3 text-sm text-slate-900 outline-none transition dsa-theme-focus-border focus:ring-2 dsa-theme-focus-ring-strong"
               placeholder="例如：600519 / HK00700 / AAPL"
               autoComplete="off"
               aria-label="股票代码"
             />
           </label>
 
-          <label className="inline-flex items-center gap-2 rounded-xl border border-teal-900/15 bg-white px-3 py-2 text-sm text-slate-700 md:self-end">
-            <input {...register('notify')} type="checkbox" className="h-4 w-4 accent-teal-600" />
+          <label className="inline-flex items-center gap-2 rounded-xl border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-700 md:self-end">
+            <input {...register('notify')} type="checkbox" className="h-4 w-4 dsa-theme-accent-input" />
             推送通知
           </label>
 
           <button
             type="submit"
-            className="h-11 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-4 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 md:self-end"
+            className="h-11 rounded-xl dsa-theme-gradient-inline px-4 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 md:self-end"
             disabled={analyzeMutation.isPending}
           >
             {analyzeMutation.isPending ? '提交中...' : '提交分析'}
@@ -398,7 +398,7 @@ export function DashboardPage() {
         ) : null}
       </div>
 
-      <div className="rounded-2xl border border-teal-900/10 bg-white/80 p-2 lg:hidden" data-testid="mobile-view-switcher">
+      <div className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-2 lg:hidden" data-testid="mobile-view-switcher">
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -407,7 +407,7 @@ export function DashboardPage() {
             data-testid="mobile-pane-history"
             className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
               mobilePane === 'history'
-                ? 'bg-teal-500/12 text-teal-900 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.24)]'
+                ? 'dsa-theme-bg-accent dsa-theme-text-accent dsa-theme-shadow-active'
                 : 'bg-white text-slate-600'
             }`}
           >
@@ -420,7 +420,7 @@ export function DashboardPage() {
             data-testid="mobile-pane-report"
             className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
               mobilePane === 'report'
-                ? 'bg-teal-500/12 text-teal-900 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.24)]'
+                ? 'dsa-theme-bg-accent dsa-theme-text-accent dsa-theme-shadow-active'
                 : 'bg-white text-slate-600'
             }`}
           >
@@ -431,13 +431,13 @@ export function DashboardPage() {
 
       <div className="grid gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className={`${mobilePane === 'history' ? 'block' : 'hidden'} space-y-3 lg:block`}>
-          <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-4" data-testid="task-panel">
+          <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4" data-testid="task-panel">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">任务状态</p>
+              <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">任务状态</p>
               <button
                 type="button"
                 onClick={() => void taskQuery.refetch()}
-                className="rounded-lg border border-teal-900/15 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg border dsa-theme-border-default bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={taskQuery.isFetching}
               >
                 {taskQuery.isFetching ? '刷新中...' : '刷新任务'}
@@ -446,7 +446,7 @@ export function DashboardPage() {
 
             {taskQuery.error ? <p className="text-sm text-rose-600">{getParsedApiError(taskQuery.error).message}</p> : null}
             {!taskQuery.error && (taskQuery.data?.tasks.length ?? 0) === 0 ? (
-              <p className="rounded-xl border border-dashed border-teal-900/20 bg-teal-50/70 p-3 text-sm text-slate-600">当前没有任务。</p>
+              <p className="rounded-xl border border-dashed dsa-theme-border-strong dsa-theme-bg-soft-70 p-3 text-sm text-slate-600">当前没有任务。</p>
             ) : null}
 
             <div className="space-y-2">
@@ -457,8 +457,8 @@ export function DashboardPage() {
                   onClick={() => void handleSelectTaskReport(task)}
                   className={`w-full rounded-xl border px-3 py-2 text-left transition ${
                     reportData && normalizeDashboardStockCode(task.stockCode) === normalizeDashboardStockCode(reportData.meta.stockCode)
-                      ? 'border-teal-500/35 bg-teal-500/10 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.22)]'
-                      : 'border-teal-900/10 bg-white hover:bg-teal-50/60'
+                      ? 'dsa-theme-border-accent dsa-theme-bg-accent-soft dsa-theme-shadow-active'
+                      : 'dsa-theme-border-subtle bg-white hover:dsa-theme-bg-soft-60'
                   }`}
                   data-testid={`task-item-${task.taskId}`}
                 >
@@ -477,9 +477,9 @@ export function DashboardPage() {
             </div>
           </article>
 
-          <article className="rounded-2xl border border-teal-900/10 bg-white/80 p-4" data-testid="history-panel">
+          <article className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4" data-testid="history-panel">
             <div className="mb-4 flex items-center justify-between gap-2">
-              <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">历史分析</p>
+              <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">历史分析</p>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -487,14 +487,14 @@ export function DashboardPage() {
                     setManageMode((value) => !value)
                     setSelectedHistoryIds([])
                   }}
-                  className="rounded-lg border border-teal-900/15 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-teal-50"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft"
                 >
                   {manageMode ? '退出管理' : '管理模式'}
                 </button>
                 <button
                   type="button"
                   onClick={() => void historyQuery.refetch()}
-                  className="rounded-lg border border-teal-900/15 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-lg border dsa-theme-border-default bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={historyQuery.isFetching}
                 >
                   {historyQuery.isFetching ? '刷新中...' : '刷新历史'}
@@ -503,13 +503,13 @@ export function DashboardPage() {
             </div>
 
             {manageMode ? (
-              <div className="mb-3 flex items-center justify-between rounded-xl border border-teal-900/10 bg-teal-50/70 px-3 py-2 text-xs">
-                <button type="button" className="font-semibold text-teal-900" onClick={toggleSelectAllVisible}>
+              <div className="mb-3 flex items-center justify-between rounded-xl border dsa-theme-border-subtle dsa-theme-bg-soft-70 px-3 py-2 text-xs">
+                <button type="button" className="font-semibold dsa-theme-text-accent" onClick={toggleSelectAllVisible}>
                   {allVisibleSelected ? '取消全选' : '全选'}
                 </button>
                 <button
                   type="button"
-                  className="rounded-lg border border-rose-300 bg-rose-50 px-2 py-1 font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-lg border border-rose-300 dsa-theme-bg-soft px-2 py-1 font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={visibleSelectedIds.length === 0 || deleteHistoryMutation.isPending}
                   onClick={() => void deleteSelectedHistory()}
                 >
@@ -520,7 +520,7 @@ export function DashboardPage() {
 
             {historyQuery.error ? <p className="text-sm text-rose-600">{getParsedApiError(historyQuery.error).message}</p> : null}
             {!historyQuery.error && historyItems.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-teal-900/20 bg-teal-50/70 p-3 text-sm text-slate-600">暂无历史记录，先提交一次分析任务。</p>
+              <p className="rounded-xl border border-dashed dsa-theme-border-strong dsa-theme-bg-soft-70 p-3 text-sm text-slate-600">暂无历史记录，先提交一次分析任务。</p>
             ) : null}
 
             <div className="space-y-2">
@@ -532,8 +532,8 @@ export function DashboardPage() {
                     key={item.id}
                     className={`rounded-xl border px-2.5 py-2 transition ${
                       active
-                        ? 'border-teal-500/35 bg-teal-500/10 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.22)]'
-                        : 'border-teal-900/10 bg-white hover:bg-teal-50/60'
+                        ? 'dsa-theme-border-accent dsa-theme-bg-accent-soft dsa-theme-shadow-active'
+                        : 'dsa-theme-border-subtle bg-white hover:dsa-theme-bg-soft-60'
                     }`}
                   >
                     <div className="flex items-start gap-2">
@@ -542,7 +542,7 @@ export function DashboardPage() {
                           type="checkbox"
                           checked={selectedInManage}
                           onChange={() => toggleHistorySelection(item.id)}
-                          className="mt-1 h-4 w-4 accent-teal-600"
+                          className="mt-1 h-4 w-4 dsa-theme-accent-input"
                           aria-label={`选择历史-${item.id}`}
                         />
                       ) : null}
@@ -566,15 +566,15 @@ export function DashboardPage() {
         </aside>
 
         <article
-          className={`${mobilePane === 'report' ? 'block' : 'hidden'} rounded-2xl border border-teal-900/10 bg-white/80 p-4 lg:block`}
+          className={`${mobilePane === 'report' ? 'block' : 'hidden'} rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4 lg:block`}
           data-testid="dashboard-report-panel"
         >
           <div className="mb-3 flex items-center justify-between gap-2">
-            <p className="text-xs uppercase tracking-[0.16em] text-teal-900/80">报告摘要</p>
+            <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">报告摘要</p>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                className="rounded-lg border border-teal-900/15 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg border dsa-theme-border-default bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={() => void copySummary()}
                 disabled={!reportData}
               >
@@ -582,7 +582,7 @@ export function DashboardPage() {
               </button>
               <button
                 type="button"
-                className="rounded-lg border border-teal-900/15 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg border dsa-theme-border-default bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={openMarkdownTab}
                 disabled={effectiveSelectedRecordId === null}
               >
@@ -590,7 +590,7 @@ export function DashboardPage() {
               </button>
               <button
                 type="button"
-                className="rounded-lg border border-teal-900/15 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-teal-50"
+                className="rounded-lg border dsa-theme-border-default bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft"
                 onClick={gotoChatWithContext}
               >
                 追问 AI
@@ -605,24 +605,24 @@ export function DashboardPage() {
           ) : null}
 
           {effectiveSelectedRecordId === null ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-teal-900/20 bg-teal-50/70 p-5 text-sm text-slate-600">
+            <div className="mt-4 rounded-2xl border border-dashed dsa-theme-border-strong dsa-theme-bg-soft-70 p-5 text-sm text-slate-600">
               先提交分析任务或选择一条历史记录，即可查看报告摘要。
             </div>
           ) : null}
 
           {effectiveSelectedRecordId !== null && reportQuery.isFetching ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-teal-900/20 bg-teal-50/70 p-5 text-sm text-slate-600">正在加载报告详情...</div>
+            <div className="mt-4 rounded-2xl border border-dashed dsa-theme-border-strong dsa-theme-bg-soft-70 p-5 text-sm text-slate-600">正在加载报告详情...</div>
           ) : null}
 
           {effectiveSelectedRecordId !== null && reportQuery.error ? (
-            <div className="mt-4 rounded-2xl border border-rose-300/70 bg-rose-50 p-5 text-sm text-rose-700">
+            <div className="mt-4 rounded-2xl border border-rose-300/70 dsa-theme-bg-soft p-5 text-sm text-rose-700">
               {getParsedApiError(reportQuery.error).message}
             </div>
           ) : null}
 
           {reportData ? (
             <div className="mt-3 space-y-3">
-              <header className="rounded-2xl border border-teal-900/10 bg-white p-3">
+              <header className="rounded-2xl border dsa-theme-border-subtle bg-white p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-slate-900">
                     {reportData.meta.stockName} · {reportData.meta.stockCode}
@@ -643,8 +643,8 @@ export function DashboardPage() {
                     aria-pressed={activeReportTab === tab.id}
                     className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
                       activeReportTab === tab.id
-                        ? 'border-teal-500/35 bg-teal-500/12 text-teal-900 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.22)]'
-                        : 'border-teal-900/10 bg-white text-slate-600 hover:bg-teal-50'
+                        ? 'dsa-theme-border-accent dsa-theme-bg-accent dsa-theme-text-accent dsa-theme-shadow-active'
+                        : 'dsa-theme-border-subtle bg-white text-slate-600 hover:dsa-theme-bg-soft'
                     }`}
                     data-testid={`report-tab-${tab.id}`}
                   >
@@ -656,26 +656,26 @@ export function DashboardPage() {
               {activeReportTab === 'overview' ? (
                 <section className="space-y-3" data-testid="report-tab-content-overview">
                   <div className="grid gap-3 md:grid-cols-3">
-                    <article className="rounded-xl border border-teal-900/10 bg-white p-4 md:col-span-2">
+                    <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4 md:col-span-2">
                       <p className="text-xs uppercase tracking-[0.12em] text-slate-500">分析总结</p>
                       <p className="mt-2 text-sm text-slate-700">{reportData.summary.analysisSummary}</p>
                     </article>
-                    <article className="rounded-xl border border-teal-900/10 bg-white p-4">
+                    <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-slate-500">操作建议</p>
                       <p className="mt-2 text-sm text-slate-700">{reportData.summary.operationAdvice}</p>
                     </article>
-                    <article className="rounded-xl border border-teal-900/10 bg-white p-4">
+                    <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-slate-500">趋势预测</p>
                       <p className="mt-2 text-sm text-slate-700">{reportData.summary.trendPrediction}</p>
                     </article>
                   </div>
 
-                  <article className="rounded-xl border border-teal-900/10 bg-white p-4">
+                  <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4">
                     <p className="text-xs uppercase tracking-[0.12em] text-slate-500">关联板块</p>
                     {relatedBoards.length > 0 ? (
                       <div className="mt-2 flex flex-wrap gap-2">
                         {relatedBoards.slice(0, 12).map((board) => (
-                          <span key={`${board.name}-${board.code || 'na'}`} className="rounded-full border border-teal-900/15 bg-teal-50 px-2.5 py-1 text-xs text-teal-900">
+                          <span key={`${board.name}-${board.code || 'na'}`} className="rounded-full border dsa-theme-border-default dsa-theme-bg-soft px-2.5 py-1 text-xs dsa-theme-text-accent">
                             {board.name}
                           </span>
                         ))}
@@ -690,26 +690,26 @@ export function DashboardPage() {
               {activeReportTab === 'strategy' ? (
                 <section className="space-y-3" data-testid="report-tab-content-strategy">
                   <div className="grid gap-3 md:grid-cols-2">
-                    <article className="rounded-xl border border-teal-900/10 bg-white p-4">
+                    <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-slate-500">理想买点</p>
                       <p className="mt-2 text-sm text-slate-700">{reportData.strategy?.idealBuy || '暂未给出，建议结合盘中量价确认。'}</p>
                     </article>
-                    <article className="rounded-xl border border-teal-900/10 bg-white p-4">
+                    <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-slate-500">次优买点</p>
                       <p className="mt-2 text-sm text-slate-700">{reportData.strategy?.secondaryBuy || '暂未给出，建议等待更清晰回踩信号。'}</p>
                     </article>
-                    <article className="rounded-xl border border-teal-900/10 bg-white p-4">
+                    <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-slate-500">止损建议</p>
                       <p className="mt-2 text-sm text-slate-700">{reportData.strategy?.stopLoss || '暂未给出，请结合仓位风险自行设置。'}</p>
                     </article>
-                    <article className="rounded-xl border border-teal-900/10 bg-white p-4">
+                    <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-slate-500">止盈建议</p>
                       <p className="mt-2 text-sm text-slate-700">{reportData.strategy?.takeProfit || '暂未给出，建议按波动分段止盈。'}</p>
                     </article>
                   </div>
 
                   {actionChecklist.length > 0 ? (
-                    <article className="rounded-xl border border-teal-900/10 bg-white p-4">
+                    <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-slate-500">执行清单</p>
                       <ul className="mt-2 space-y-1 text-sm text-slate-700">
                         {actionChecklist.map((item) => (
@@ -723,12 +723,12 @@ export function DashboardPage() {
 
               {activeReportTab === 'news' ? (
                 <section className="space-y-3" data-testid="report-tab-content-news">
-                  <article className="rounded-xl border border-teal-900/10 bg-white p-4">
+                  <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4">
                     <p className="text-xs uppercase tracking-[0.12em] text-slate-500">资讯摘要</p>
                     <p className="mt-2 text-sm text-slate-700">{reportDetails?.newsContent || '暂无资讯摘要。'}</p>
                   </article>
 
-                  <article className="rounded-xl border border-teal-900/10 bg-white p-4">
+                  <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4">
                     <p className="text-xs uppercase tracking-[0.12em] text-slate-500">资讯列表</p>
                     {newsQuery.isFetching ? <p className="mt-2 text-sm text-slate-600">正在加载资讯...</p> : null}
                     {newsQuery.error ? <p className="mt-2 text-sm text-rose-600">{getParsedApiError(newsQuery.error).message}</p> : null}
@@ -742,7 +742,7 @@ export function DashboardPage() {
                           href={item.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="block rounded-lg border border-teal-900/10 bg-slate-50 px-3 py-2 transition hover:border-teal-400/40 hover:bg-teal-50/50"
+                          className="block rounded-lg border dsa-theme-border-subtle bg-slate-50 px-3 py-2 transition dsa-theme-hover-border-accent hover:dsa-theme-bg-soft-50"
                         >
                           <p className="text-sm font-semibold text-slate-800">{item.title}</p>
                           <p className="mt-1 text-xs text-slate-600">{shortText(item.snippet)}</p>
@@ -756,7 +756,7 @@ export function DashboardPage() {
               {activeReportTab === 'transparency' ? (
                 <section className="space-y-3" data-testid="report-tab-content-transparency">
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    <article className="rounded-xl border border-teal-900/10 bg-white p-4">
+                    <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-slate-500">模型与来源</p>
                       <dl className="mt-2 space-y-1 text-sm text-slate-700">
                         <div className="flex justify-between gap-2">
@@ -778,7 +778,7 @@ export function DashboardPage() {
                       </dl>
                     </article>
 
-                    <article className="rounded-xl border border-teal-900/10 bg-white p-4">
+                    <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-slate-500">行情快照</p>
                       <dl className="mt-2 space-y-1 text-sm text-slate-700">
                         <div className="flex justify-between gap-2">
@@ -800,7 +800,7 @@ export function DashboardPage() {
                       </dl>
                     </article>
 
-                    <article className="rounded-xl border border-teal-900/10 bg-white p-4">
+                    <article className="rounded-xl border dsa-theme-border-subtle bg-white p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-slate-500">趋势信号</p>
                       <dl className="mt-2 space-y-1 text-sm text-slate-700">
                         <div className="flex justify-between gap-2">
@@ -837,11 +837,11 @@ export function DashboardPage() {
               ) : null}
 
               {activeReportTab === 'markdown' ? (
-                <section className="rounded-2xl border border-teal-900/10 bg-white p-4" data-testid="report-tab-content-markdown">
+                <section className="rounded-2xl border dsa-theme-border-subtle bg-white p-4" data-testid="report-tab-content-markdown">
                   {markdownQuery.isFetching ? <p className="text-sm text-slate-600">正在加载 Markdown...</p> : null}
                   {markdownQuery.error ? <p className="text-sm text-rose-600">{getParsedApiError(markdownQuery.error).message}</p> : null}
                   {!markdownQuery.isFetching && !markdownQuery.error ? (
-                    <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-xl border border-teal-900/10 bg-slate-50 p-3 text-xs text-slate-700">
+                    <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-xl border dsa-theme-border-subtle bg-slate-50 p-3 text-xs text-slate-700">
                       {markdownQuery.data || '暂无 Markdown 内容。'}
                     </pre>
                   ) : null}

@@ -24,6 +24,9 @@ beforeAll(() => {
 afterEach(() => {
   server.resetHandlers()
   queryClient.clear()
+  window.localStorage.clear()
+  window.sessionStorage.clear()
+  delete document.documentElement.dataset.theme
 })
 
 afterAll(() => {

@@ -48,7 +48,9 @@ function MessageMarkdown({ content }: { content: string }) {
           </pre>
         ),
         blockquote: ({ children }) => (
-          <blockquote className="mb-2 border-l-2 border-teal-300 pl-3 text-slate-600 italic last:mb-0">{children}</blockquote>
+          <blockquote className="mb-2 border-l-2 dsa-theme-border-accent-soft pl-3 text-slate-600 italic last:mb-0">
+            {children}
+          </blockquote>
         ),
       }}
     >
@@ -369,13 +371,13 @@ export function ChatPage() {
     return (
       <>
         <div className="mb-2 flex items-center justify-between gap-2">
-          <p className="text-xs uppercase tracking-[0.2em] text-teal-900/80">{isDesktop ? '会话管理' : '会话列表'}</p>
+          <p className="text-xs uppercase tracking-[0.2em] dsa-theme-text-accent-muted">{isDesktop ? '会话管理' : '会话列表'}</p>
           <div className="flex items-center gap-1.5">
             {isDesktop ? (
               <button
                 type="button"
                 onClick={() => setDesktopSessionManagerOpen(false)}
-                className="rounded-lg border border-teal-900/15 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-teal-50"
+                className="rounded-lg border dsa-theme-border-default bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:dsa-theme-bg-soft"
                 data-testid="chat-session-manager-close"
               >
                 关闭
@@ -384,7 +386,7 @@ export function ChatPage() {
             <button
               type="button"
               onClick={handleCreateFromPanel}
-              className="rounded-lg border border-teal-900/15 bg-teal-500/12 px-2.5 py-1.5 text-xs font-semibold text-teal-900 transition hover:bg-teal-500/18"
+              className="rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-2.5 py-1.5 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover"
               data-testid={isDesktop ? 'chat-new-session' : 'chat-new-session-mobile'}
             >
               新建会话
@@ -394,15 +396,15 @@ export function ChatPage() {
 
         <div className="space-y-2 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1" data-testid={isDesktop ? 'chat-session-list' : 'chat-mobile-session-list'}>
           {sessionsQuery.isFetching ? (
-            <p className="rounded-xl border border-dashed border-teal-900/20 bg-teal-50/70 p-3 text-sm text-slate-600">正在加载会话...</p>
+            <p className="rounded-xl border border-dashed dsa-theme-border-strong dsa-theme-bg-soft-70 p-3 text-sm text-slate-600">正在加载会话...</p>
           ) : null}
 
           {sessionsQuery.error ? (
-            <p className="rounded-xl border border-rose-300/70 bg-rose-50 p-3 text-sm text-rose-700">{getParsedApiError(sessionsQuery.error).message}</p>
+            <p className="rounded-xl border border-rose-300/70 dsa-theme-bg-soft p-3 text-sm text-rose-700">{getParsedApiError(sessionsQuery.error).message}</p>
           ) : null}
 
           {!sessionsQuery.isFetching && !sessionsQuery.error && sessions.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-teal-900/20 bg-teal-50/70 p-3 text-sm text-slate-600">暂无历史会话，先创建一个新会话。</p>
+            <p className="rounded-xl border border-dashed dsa-theme-border-strong dsa-theme-bg-soft-70 p-3 text-sm text-slate-600">暂无历史会话，先创建一个新会话。</p>
           ) : null}
 
           {sessions.map((session) => {
@@ -416,8 +418,8 @@ export function ChatPage() {
                 key={session.sessionId}
                 className={`rounded-xl border p-2 transition ${
                   isActive
-                    ? 'border-teal-500/35 bg-teal-500/10 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.2)]'
-                    : 'border-teal-900/10 bg-white hover:bg-teal-50/60'
+                    ? 'dsa-theme-border-accent dsa-theme-bg-accent-soft dsa-theme-shadow-active'
+                    : 'dsa-theme-border-subtle bg-white hover:dsa-theme-bg-soft-60'
                 }`}
               >
                 <button
@@ -442,7 +444,7 @@ export function ChatPage() {
                     <button
                       type="button"
                       onClick={() => void handleDeleteSession(session.sessionId)}
-                      className="rounded-md border border-rose-300/80 bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-md border border-rose-300/80 dsa-theme-bg-soft px-2 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={deleteMutation.isPending}
                       aria-label={`删除会话-${session.title || session.sessionId}`}
                     >
@@ -460,7 +462,7 @@ export function ChatPage() {
 
   return (
     <section className="space-y-3" data-testid="page-chat">
-      <div className="rounded-2xl border border-teal-900/10 bg-white/80 p-2 lg:hidden" data-testid="chat-mobile-switcher">
+      <div className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-2 lg:hidden" data-testid="chat-mobile-switcher">
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -469,7 +471,7 @@ export function ChatPage() {
             aria-pressed={mobilePane === 'sessions'}
             className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
               mobilePane === 'sessions'
-                ? 'bg-teal-500/12 text-teal-900 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.24)]'
+                ? 'dsa-theme-bg-accent dsa-theme-text-accent dsa-theme-shadow-active'
                 : 'bg-white text-slate-600'
             }`}
           >
@@ -482,7 +484,7 @@ export function ChatPage() {
             aria-pressed={mobilePane === 'messages'}
             className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
               mobilePane === 'messages'
-                ? 'bg-teal-500/12 text-teal-900 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.24)]'
+                ? 'dsa-theme-bg-accent dsa-theme-text-accent dsa-theme-shadow-active'
                 : 'bg-white text-slate-600'
             }`}
           >
@@ -492,13 +494,13 @@ export function ChatPage() {
       </div>
 
       {mobilePane === 'sessions' ? (
-        <section className="rounded-2xl border border-teal-900/10 bg-white/80 p-3 lg:hidden" data-testid="chat-mobile-session-panel">
+        <section className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-3 lg:hidden" data-testid="chat-mobile-session-panel">
           {renderSessionManagerContent('mobile')}
         </section>
       ) : null}
 
       <article
-          className={`${mobilePane === 'messages' ? 'block' : 'hidden'} rounded-2xl border border-teal-900/10 bg-white/80 p-4 lg:block lg:min-h-[calc(100vh-6rem)]`}
+          className={`${mobilePane === 'messages' ? 'block' : 'hidden'} rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4 lg:block lg:min-h-[calc(100vh-6rem)]`}
           data-testid="chat-message-panel"
         >
           <h2 hidden data-testid="page-title-chat">
@@ -507,7 +509,7 @@ export function ChatPage() {
 
           <div className="flex flex-wrap items-center gap-2">
             <p
-              className="rounded-lg border border-teal-900/10 bg-teal-50/70 px-2.5 py-1 text-xs font-medium text-teal-800"
+              className="rounded-lg border dsa-theme-border-subtle dsa-theme-bg-soft-70 px-2.5 py-1 text-xs font-medium dsa-theme-text-accent-strong"
               data-testid="chat-session-context-status"
             >
               {isCurrentServerSession ? '云端会话 · 已持久化' : '本地草稿 · 尚未入库'} · 当前消息 {currentMessages.length} 条 · 当前策略{' '}
@@ -516,7 +518,7 @@ export function ChatPage() {
             <button
               type="button"
               onClick={handleExportSession}
-              className="rounded-lg border border-teal-900/15 bg-white px-3 py-1.5 text-xs font-semibold text-teal-900 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border dsa-theme-border-default bg-white px-3 py-1.5 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-soft disabled:cursor-not-allowed disabled:opacity-60"
               disabled={!canOperateSession}
               data-testid="chat-export-session"
             >
@@ -525,7 +527,7 @@ export function ChatPage() {
             <button
               type="button"
               onClick={() => void handleSendSession()}
-              className="rounded-lg border border-teal-900/15 bg-teal-500/12 px-3 py-1.5 text-xs font-semibold text-teal-900 transition hover:bg-teal-500/18 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-1.5 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
               disabled={!canOperateSession || sendMutation.isPending || isStreaming}
               data-testid="chat-send-session"
             >
@@ -534,7 +536,7 @@ export function ChatPage() {
             <button
               type="button"
               onClick={() => setDesktopSessionManagerOpen((value) => !value)}
-              className="hidden rounded-lg border border-teal-900/15 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-teal-50 lg:inline-flex"
+              className="hidden rounded-lg border dsa-theme-border-default bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft lg:inline-flex"
               data-testid="chat-session-manager-toggle"
               aria-expanded={desktopSessionManagerOpen}
             >
@@ -546,10 +548,10 @@ export function ChatPage() {
             <div
               className={`mt-2 rounded-xl border px-3 py-2 text-xs ${
                 followUpQuery.error
-                  ? 'border-rose-300/70 bg-rose-50 text-rose-700'
+                  ? 'border-rose-300/70 dsa-theme-bg-soft text-rose-700'
                   : followUpContext
-                    ? 'border-teal-500/30 bg-teal-50 text-teal-900'
-                    : 'border-teal-900/15 bg-white text-slate-600'
+                    ? 'dsa-theme-border-accent-soft dsa-theme-bg-soft dsa-theme-text-accent'
+                    : 'dsa-theme-border-default bg-white text-slate-600'
               }`}
               data-testid="chat-follow-up-banner"
             >
@@ -569,7 +571,7 @@ export function ChatPage() {
             </p>
           ) : null}
 
-          <div className="mt-3 flex min-h-[58vh] flex-col rounded-2xl border border-teal-900/10 bg-white p-3">
+          <div className="mt-3 flex min-h-[58vh] flex-col rounded-2xl border dsa-theme-border-subtle bg-white p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs uppercase tracking-[0.12em] text-slate-500">会话消息</p>
               <div className="ml-auto flex min-w-0 max-w-full items-center gap-2">
@@ -596,16 +598,16 @@ export function ChatPage() {
             ) : null}
 
             {streamEvents.length > 0 || isStreaming || streamError ? (
-              <div className="mt-3 rounded-xl border border-teal-900/10 bg-teal-50/70 p-3" data-testid="chat-stream-panel">
+              <div className="mt-3 rounded-xl border dsa-theme-border-subtle dsa-theme-bg-soft-70 p-3" data-testid="chat-stream-panel">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-900/80" data-testid="chat-stream-status">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] dsa-theme-text-accent-muted" data-testid="chat-stream-status">
                     {isStreaming ? '流式分析进行中' : streamError ? '流式分析失败' : '流式分析完成'}
                   </p>
                   {isStreaming ? (
                     <button
                       type="button"
                       onClick={handleCancelStreaming}
-                      className="rounded-md border border-rose-300/80 bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100"
+                      className="rounded-md border border-rose-300/80 dsa-theme-bg-soft px-2 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100"
                       data-testid="chat-stream-cancel"
                     >
                       取消请求
@@ -615,7 +617,7 @@ export function ChatPage() {
                 {streamError ? <p className="mt-2 text-xs text-rose-700">{streamError}</p> : null}
 
                 {streamEvents.length > 0 ? (
-                  <details className="mt-2 rounded-lg border border-teal-900/10 bg-white p-2" open={isStreaming}>
+                  <details className="mt-2 rounded-lg border dsa-theme-border-subtle bg-white p-2" open={isStreaming}>
                     <summary className="cursor-pointer text-xs font-semibold text-slate-700">思考过程 ({streamEvents.length})</summary>
                     <ol className="mt-2 space-y-1 text-xs text-slate-600">
                       {streamEvents.map((event, index) => (
@@ -637,7 +639,7 @@ export function ChatPage() {
                   <div
                     key={message.id}
                     className={`rounded-xl border px-3 py-2 ${
-                      isUser ? 'border-sky-200/70 bg-sky-50 text-slate-800' : 'border-teal-900/10 bg-slate-50 text-slate-800'
+                      isUser ? 'border-sky-200/70 bg-sky-50 text-slate-800' : 'dsa-theme-border-subtle bg-slate-50 text-slate-800'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -645,7 +647,7 @@ export function ChatPage() {
                       <button
                         type="button"
                         onClick={() => void handleCopyMessage(message.id, message.content || '')}
-                        className="rounded-md border border-teal-900/15 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600 transition hover:bg-teal-50"
+                        className="rounded-md border dsa-theme-border-default bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600 transition hover:dsa-theme-bg-soft"
                         data-testid={`chat-copy-message-${message.id}`}
                       >
                         {copiedMessageId === message.id ? '已复制' : '复制'}
@@ -653,8 +655,8 @@ export function ChatPage() {
                     </div>
 
                     {!isUser && parsedMessage.thinking ? (
-                      <details className="mt-2 rounded-lg border border-teal-900/10 bg-white p-2">
-                        <summary className="cursor-pointer text-xs font-semibold text-teal-900/80">思考过程</summary>
+                      <details className="mt-2 rounded-lg border dsa-theme-border-subtle bg-white p-2">
+                        <summary className="cursor-pointer text-xs font-semibold dsa-theme-text-accent-muted">思考过程</summary>
                         <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">{parsedMessage.thinking}</p>
                       </details>
                     ) : null}
@@ -668,8 +670,8 @@ export function ChatPage() {
               })}
 
               {isStreaming && streamPreview ? (
-                <div className="rounded-xl border border-teal-500/30 bg-teal-50 px-3 py-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-teal-800">AI (流式预览)</p>
+                <div className="rounded-xl border dsa-theme-border-accent-soft dsa-theme-bg-soft px-3 py-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] dsa-theme-text-accent-strong">AI (流式预览)</p>
                   <div className="mt-1 text-sm text-slate-800">
                     <MessageMarkdown content={streamPreview} />
                   </div>
@@ -677,7 +679,7 @@ export function ChatPage() {
               ) : null}
             </div>
 
-            <div className="mt-2 shrink-0 rounded-xl border border-teal-900/10 bg-teal-50/50 p-3" data-testid="chat-composer">
+            <div className="mt-2 shrink-0 rounded-xl border dsa-theme-border-subtle dsa-theme-bg-soft-50 p-3" data-testid="chat-composer">
               <div className="flex items-start justify-between gap-4">
                 <label htmlFor="chat-input" className="pt-1 text-xs uppercase tracking-[0.12em] text-slate-600">
                   输入问题
@@ -693,8 +695,8 @@ export function ChatPage() {
                           onClick={() => setSelectedSkillId(skill.id)}
                           className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition ${
                             effectiveSelectedSkillId === skill.id
-                              ? 'border-teal-500/40 bg-teal-500/12 text-teal-900'
-                              : 'border-teal-900/15 bg-white text-slate-700 hover:bg-teal-50'
+                              ? 'dsa-theme-border-accent-strong dsa-theme-bg-accent dsa-theme-text-accent'
+                              : 'dsa-theme-border-default bg-white text-slate-700 hover:dsa-theme-bg-soft'
                           }`}
                         data-testid={`chat-skill-chip-${skill.id}`}
                       >
@@ -706,7 +708,7 @@ export function ChatPage() {
                         value={effectiveSelectedSkillId}
                         onChange={(event) => setSelectedSkillId(event.target.value)}
                         aria-label="策略选择"
-                        className="h-8 w-[11rem] shrink-0 rounded-lg border border-teal-900/15 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-teal-500/60 focus:ring-2 focus:ring-teal-500/15"
+                        className="h-8 w-[11rem] shrink-0 rounded-lg border dsa-theme-border-default bg-white px-3 text-sm text-slate-800 outline-none transition dsa-theme-focus-border-soft focus:ring-2 dsa-theme-focus-ring"
                         data-testid="chat-skill-select"
                         disabled={!allSkills.length}
                       >
@@ -739,7 +741,7 @@ export function ChatPage() {
                 onChange={(event) => setDraftMessage(event.target.value)}
                 onKeyDown={handleInputKeyDown}
                 rows={3}
-                className="mt-2 w-full resize-none rounded-lg border border-teal-900/15 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500/60 focus:ring-2 focus:ring-teal-500/15"
+                className="mt-2 w-full resize-none rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800 outline-none transition dsa-theme-focus-border-soft focus:ring-2 dsa-theme-focus-ring"
                 placeholder="例如：用当前策略分析 600519，给出短线入场与止损建议。"
                 data-testid="chat-input"
               />
@@ -748,7 +750,7 @@ export function ChatPage() {
                 <button
                   type="button"
                   onClick={() => void handleSendMessage()}
-                  className="rounded-lg border border-teal-900/15 bg-teal-500/12 px-3 py-1.5 text-xs font-semibold text-teal-900 transition hover:bg-teal-500/18 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-1.5 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
                   data-testid="chat-send-message"
                   disabled={!canSubmitMessage}
                 >
@@ -768,7 +770,7 @@ export function ChatPage() {
             aria-label="关闭会话管理"
           />
           <aside
-            className="absolute right-[var(--dsa-shell-content-padding)] top-[5.35rem] w-[min(420px,calc(100vw-3rem))] rounded-2xl border border-teal-900/15 bg-white/95 p-3 shadow-[0_20px_45px_rgba(15,23,42,0.2)] backdrop-blur-xl"
+            className="absolute right-[var(--dsa-shell-content-padding)] top-[5.35rem] w-[min(420px,calc(100vw-3rem))] rounded-2xl border dsa-theme-border-default bg-white/95 p-3 shadow-[0_20px_45px_rgba(15,23,42,0.2)] backdrop-blur-xl"
             data-testid="chat-session-panel"
           >
             {renderSessionManagerContent('desktop')}

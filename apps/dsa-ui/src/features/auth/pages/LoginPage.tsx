@@ -62,11 +62,11 @@ export function LoginPage() {
 
   return (
     <main
-      className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.18),_transparent_52%),linear-gradient(180deg,_#f6fbf9_0%,_#eef6f4_100%)] p-6"
+      className="dsa-theme-login-bg grid min-h-screen place-items-center p-6"
       data-testid="page-login"
     >
-      <section className="w-full max-w-md rounded-3xl border border-teal-900/10 bg-white/90 p-8 shadow-[0_24px_60px_rgba(15,23,42,0.16)]">
-        <p className="text-xs uppercase tracking-[0.2em] text-teal-700/80">Daily Stock Analysis</p>
+      <section className="w-full max-w-md rounded-3xl border dsa-theme-border-subtle bg-white/90 p-8 shadow-[0_24px_60px_rgba(15,23,42,0.16)]">
+        <p className="text-xs uppercase tracking-[0.2em] dsa-theme-text-accent-soft">Daily Stock Analysis</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900" data-testid="page-title-login">
           {isFirstTime ? '首次设置密码' : '管理员登录'}
         </h1>
@@ -90,7 +90,7 @@ export function LoginPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder={isFirstTime ? '请设置管理员密码' : '请输入管理员密码'}
-              className="rounded-xl border border-teal-900/15 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15"
+              className="rounded-xl border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800 outline-none transition dsa-theme-focus-border focus:ring-2 dsa-theme-focus-ring"
               data-testid="login-password"
             />
           </label>
@@ -103,7 +103,7 @@ export function LoginPage() {
                 value={passwordConfirm}
                 onChange={(event) => setPasswordConfirm(event.target.value)}
                 placeholder="再次输入管理员密码"
-                className="rounded-xl border border-teal-900/15 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15"
+                className="rounded-xl border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800 outline-none transition dsa-theme-focus-border focus:ring-2 dsa-theme-focus-ring"
                 data-testid="login-password-confirm"
               />
             </label>
@@ -112,7 +112,7 @@ export function LoginPage() {
           <button
             type="button"
             onClick={() => void handleSubmit()}
-            className="mt-1 w-full rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(13,148,136,0.3)] transition hover:opacity-95 disabled:opacity-60"
+            className="mt-1 w-full rounded-xl dsa-theme-gradient-inline px-4 py-3 text-sm font-semibold text-white dsa-theme-shadow-primary transition hover:opacity-95 disabled:opacity-60"
             disabled={loginMutation.isPending || authStatusQuery.isFetching}
             data-testid="login-submit"
           >
@@ -126,7 +126,7 @@ export function LoginPage() {
           </p>
         ) : null}
 
-        <Link to="/" className="mt-4 inline-flex text-sm font-semibold text-teal-900 underline decoration-teal-400/70 underline-offset-4">
+        <Link to="/" className="mt-4 inline-flex text-sm font-semibold dsa-theme-text-accent underline dsa-theme-decoration-accent underline-offset-4">
           返回主界面
         </Link>
       </section>

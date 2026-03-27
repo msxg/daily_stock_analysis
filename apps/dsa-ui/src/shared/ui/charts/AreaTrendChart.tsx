@@ -7,6 +7,7 @@ import {
   type ISeriesApi,
   type Time,
 } from 'lightweight-charts'
+import { useTheme } from '@/app/providers/useTheme'
 
 export type TrendPoint = {
   time: Time
@@ -20,6 +21,7 @@ type AreaTrendChartProps = {
 }
 
 export function AreaTrendChart({ data, height = 280, className = '' }: AreaTrendChartProps) {
+  const { theme } = useTheme()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const seriesRef = useRef<ISeriesApi<'Area'> | null>(null)
@@ -29,40 +31,49 @@ export function AreaTrendChart({ data, height = 280, className = '' }: AreaTrend
       return
     }
 
+    const rootStyle = getComputedStyle(document.documentElement)
+    const chartTextColor = rootStyle.getPropertyValue('--dsa-chart-text').trim() || 'rgba(34, 45, 67, 0.85)'
+    const chartBorderColor = rootStyle.getPropertyValue('--dsa-chart-border').trim() || 'rgba(159, 18, 57, 0.16)'
+    const chartGridColor = rootStyle.getPropertyValue('--dsa-chart-grid').trim() || 'rgba(159, 18, 57, 0.08)'
+    const chartCrosshairColor = rootStyle.getPropertyValue('--dsa-chart-crosshair').trim() || 'rgba(225, 29, 72, 0.35)'
+    const chartLineColor = rootStyle.getPropertyValue('--dsa-chart-line').trim() || 'rgba(225, 29, 72, 0.95)'
+    const chartTopColor = rootStyle.getPropertyValue('--dsa-chart-top').trim() || 'rgba(225, 29, 72, 0.34)'
+    const chartBottomColor = rootStyle.getPropertyValue('--dsa-chart-bottom').trim() || 'rgba(225, 29, 72, 0.04)'
+
     const chart = createChart(containerRef.current, {
       width: containerRef.current.clientWidth,
       height,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: 'rgba(34, 45, 67, 0.85)',
+        textColor: chartTextColor,
         fontFamily: 'Manrope, Segoe UI, sans-serif',
       },
       rightPriceScale: {
-        borderColor: 'rgba(27, 90, 74, 0.16)',
+        borderColor: chartBorderColor,
       },
       timeScale: {
-        borderColor: 'rgba(27, 90, 74, 0.16)',
+        borderColor: chartBorderColor,
       },
       grid: {
-        vertLines: { color: 'rgba(27, 90, 74, 0.08)' },
-        horzLines: { color: 'rgba(27, 90, 74, 0.08)' },
+        vertLines: { color: chartGridColor },
+        horzLines: { color: chartGridColor },
       },
       crosshair: {
         vertLine: {
-          color: 'rgba(14, 165, 152, 0.35)',
+          color: chartCrosshairColor,
           width: 1,
         },
         horzLine: {
-          color: 'rgba(14, 165, 152, 0.35)',
+          color: chartCrosshairColor,
           width: 1,
         },
       },
     })
 
     const areaSeries = chart.addSeries(AreaSeries, {
-      lineColor: 'rgba(14, 165, 152, 0.95)',
-      topColor: 'rgba(14, 165, 152, 0.34)',
-      bottomColor: 'rgba(14, 165, 152, 0.04)',
+      lineColor: chartLineColor,
+      topColor: chartTopColor,
+      bottomColor: chartBottomColor,
       lineWidth: 2,
     })
 
@@ -87,7 +98,7 @@ export function AreaTrendChart({ data, height = 280, className = '' }: AreaTrend
       chartRef.current = null
       seriesRef.current = null
     }
-  }, [height, data])
+  }, [data, height, theme])
 
   return <div className={className} ref={containerRef} />
 }
