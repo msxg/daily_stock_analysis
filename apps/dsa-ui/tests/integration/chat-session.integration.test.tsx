@@ -181,7 +181,7 @@ describe('Chat session management', () => {
           context?: Record<string, unknown>
         }
         const text = String(body.message || '')
-        const sessionId = String(body.session_id || 'session-001')
+        const sessionId = 'session-001'
         capturedSkills = body.skills || []
         capturedContext = body.context
 
@@ -203,6 +203,10 @@ describe('Chat session management', () => {
             },
           ],
         }
+
+        await new Promise((resolve) => {
+          setTimeout(resolve, 80)
+        })
 
         const ssePayload = [
           { type: 'thinking', step: 1, message: '正在制定分析路径...' },
@@ -246,10 +250,20 @@ describe('Chat session management', () => {
       stock_code: '600519',
     })
 
+    expect(await screen.findByTestId('chat-pending-user-message')).toHaveTextContent('请给我一个短线计划')
+    expect(screen.getByTestId('chat-stream-panel')).toBeInTheDocument()
+    expect(screen.getByTestId('chat-stream-status')).toHaveTextContent('思考中')
+    const messageList = screen.getByTestId('chat-message-list')
+    expect(messageList.lastElementChild).toHaveAttribute('data-testid', 'chat-stream-panel')
+    expect(messageList.lastElementChild?.previousElementSibling).toHaveAttribute('data-testid', 'chat-pending-user-message')
+
     expect(await screen.findByText('建议分批布局并设置保护位。')).toBeInTheDocument()
     expect(await screen.findByText('消息已发送，AI 回复已更新。')).toBeInTheDocument()
-    expect(screen.getByTestId('chat-stream-panel')).toBeInTheDocument()
-    expect(screen.getByTestId('chat-stream-event-0')).toHaveTextContent('正在制定分析路径')
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('chat-pending-user-message')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('chat-stream-panel')).not.toBeInTheDocument()
+    })
   }, 10000)
 
   it('renders markdown and supports copying message', async () => {

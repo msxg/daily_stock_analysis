@@ -77,6 +77,17 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('chat stream and context injection flow @visual', async ({ page }) => {
+  const sessionMessages = {
+    'session-001': [
+      {
+        id: 'm-001',
+        role: 'assistant',
+        content: '<think>先看趋势</think>\n\n**结论**：短线偏强。',
+        created_at: '2026-03-26T09:10:05+08:00',
+      },
+    ],
+  }
+
   await page.route('**/api/v1/agent/skills**', (route) =>
     route.fulfill({
       json: {
@@ -107,14 +118,7 @@ test('chat stream and context injection flow @visual', async ({ page }) => {
     route.fulfill({
       json: {
         session_id: 'session-001',
-        messages: [
-          {
-            id: 'm-001',
-            role: 'assistant',
-            content: '<think>先看趋势</think>\n\n**结论**：短线偏强。',
-            created_at: '2026-03-26T09:10:05+08:00',
-          },
-        ],
+        messages: sessionMessages['session-001'],
       },
     }),
   )
@@ -138,8 +142,29 @@ test('chat stream and context injection flow @visual', async ({ page }) => {
       },
     }),
   )
-  await page.route('**/api/v1/agent/chat/stream', (route) =>
-    route.fulfill({
+  await page.route('**/api/v1/agent/chat/stream', async (route) => {
+    const body = route.request().postDataJSON() as { message?: string }
+    sessionMessages['session-001'] = [
+      ...sessionMessages['session-001'],
+      {
+        id: 'm-002',
+        role: 'user',
+        content: String(body.message || ''),
+        created_at: '2026-03-26T09:11:00+08:00',
+      },
+      {
+        id: 'm-003',
+        role: 'assistant',
+        content: '建议分批布局并设置保护位。',
+        created_at: '2026-03-26T09:11:05+08:00',
+      },
+    ]
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 200)
+    })
+
+    return route.fulfill({
       status: 200,
       headers: { 'content-type': 'text/event-stream' },
       body: [
@@ -150,8 +175,8 @@ test('chat stream and context injection flow @visual', async ({ page }) => {
       ]
         .map((event) => `data: ${JSON.stringify(event)}\n\n`)
         .join(''),
-    }),
-  )
+    })
+  })
 
   await page.goto('/chat?from=report&recordId=101')
   await expect(page.getByTestId('page-chat')).toBeVisible()
@@ -160,9 +185,19 @@ test('chat stream and context injection flow @visual', async ({ page }) => {
   await page.getByTestId('chat-input').fill('请给我一个短线计划')
   await page.getByTestId('chat-send-message').click()
 
+  await expect(page.getByTestId('chat-pending-user-message')).toContainText('请给我一个短线计划')
   await expect(page.getByTestId('chat-stream-panel')).toBeVisible()
-  await expect(page.getByTestId('chat-stream-event-0')).toContainText('正在制定分析路径')
+  await expect
+    .poll(async () => {
+      return page.getByTestId('chat-message-list').evaluate((node) =>
+        Array.from(node.children).slice(-2).map((child) => child.getAttribute('data-testid') || ''),
+      )
+    })
+    .toEqual(['chat-pending-user-message', 'chat-stream-panel'])
   await expect(page.getByText('消息已发送，AI 回复已更新。')).toBeVisible()
+  await expect(page.getByText('建议分批布局并设置保护位。')).toBeVisible()
+  await expect(page.getByTestId('chat-pending-user-message')).toHaveCount(0)
+  await expect(page.getByTestId('chat-stream-panel')).toHaveCount(0)
 })
 
 test('portfolio and backtest workspace flows @visual', async ({ page }) => {

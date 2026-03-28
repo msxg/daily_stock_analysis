@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useSearchParams } from 'react-router-dom'
 import { agentApi, getParsedApiError } from '@/shared/api'
-import type { ChatRequestPayload, ChatStreamEvent } from '@/shared/types/chat'
+import type { ChatRequestPayload, ChatSessionMessage, ChatStreamEvent } from '@/shared/types/chat'
 import { historyApi } from '@/shared/api/history'
 import { formatDateTime } from '@/shared/utils/date'
 import {
@@ -30,25 +30,31 @@ import { formatStreamEventLabel } from '@/features/chat/utils/stream'
 type InlineFeedback = { kind: 'success' | 'error'; message: string } | null
 type MobilePane = 'sessions' | 'messages'
 
+function getMessageTimestamp(value: string | null | undefined): number {
+  if (!value) return Number.NaN
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) ? timestamp : Number.NaN
+}
+
 function MessageMarkdown({ content }: { content: string }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
-        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-        ul: ({ children }) => <ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0">{children}</ul>,
-        ol: ({ children }) => <ol className="mb-2 list-decimal space-y-1 pl-5 last:mb-0">{children}</ol>,
-        li: ({ children }) => <li>{children}</li>,
+        p: ({ children }) => <p className="leading-relaxed">{children}</p>,
+        ul: ({ children }) => <ul className="list-disc space-y-1 pl-4 text-sm leading-relaxed">{children}</ul>,
+        ol: ({ children }) => <ol className="list-decimal space-y-1 pl-4 text-sm leading-relaxed">{children}</ol>,
+        li: ({ children }) => <li className="leading-relaxed">{children}</li>,
         code: ({ children }) => (
           <code className="rounded bg-slate-200/70 px-1.5 py-0.5 text-xs text-slate-800">{children}</code>
         ),
         pre: ({ children }) => (
-          <pre className="mb-2 overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-3 text-xs text-slate-700 last:mb-0">
+          <pre className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-3 text-xs text-slate-700">
             {children}
           </pre>
         ),
         blockquote: ({ children }) => (
-          <blockquote className="mb-2 border-l-2 dsa-theme-border-accent-soft pl-3 text-slate-600 italic last:mb-0">
+          <blockquote className="border-l-2 dsa-theme-border-accent-soft pl-2.5 text-sm leading-relaxed text-slate-600 italic">
             {children}
           </blockquote>
         ),
@@ -72,6 +78,7 @@ export function ChatPage() {
   const [mobilePane, setMobilePane] = useState<MobilePane>('messages')
   const [desktopSessionManagerOpen, setDesktopSessionManagerOpen] = useState(false)
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
+  const [pendingUserMessage, setPendingUserMessage] = useState<ChatSessionMessage | null>(null)
   const [streamEvents, setStreamEvents] = useState<ChatStreamEvent[]>([])
   const [streamError, setStreamError] = useState<string | null>(null)
   const [streamPreview, setStreamPreview] = useState('')
@@ -82,6 +89,8 @@ export function ChatPage() {
   const streamAbortRef = useRef<AbortController | null>(null)
   const copyResetTimerRef = useRef<number | null>(null)
   const injectedRecordIdRef = useRef<number | null>(null)
+  const messageListRef = useRef<HTMLDivElement | null>(null)
+  const queryClient = useQueryClient()
 
   const followUpRecordId = parseFollowUpRecordId(searchParams.get('recordId'))
   const fromReport = searchParams.get('from') === 'report'
@@ -130,17 +139,49 @@ export function ChatPage() {
   })
 
   const currentMessages = messagesQuery.data || []
-  const firstUserMessage = currentMessages.find((message) => message.role === 'user') || null
-  const hasAssistantMessage = currentMessages.some((message) => message.role === 'assistant')
+  const orderedCurrentMessages = currentMessages
+    .map((message, index) => ({ message, index }))
+    .sort((left, right) => {
+      const leftTime = getMessageTimestamp(left.message.createdAt)
+      const rightTime = getMessageTimestamp(right.message.createdAt)
+
+      if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime !== rightTime) {
+        return leftTime - rightTime
+      }
+
+      if (Number.isFinite(leftTime) && !Number.isFinite(rightTime)) {
+        return -1
+      }
+
+      if (!Number.isFinite(leftTime) && Number.isFinite(rightTime)) {
+        return 1
+      }
+
+      return left.index - right.index
+    })
+    .map(({ message }) => message)
+  const firstUserMessage = orderedCurrentMessages.find((message) => message.role === 'user') || null
+  const hasAssistantMessage = orderedCurrentMessages.some((message) => message.role === 'assistant')
   const normalizedRawSessionTitle = String(currentSession?.title || '').trim()
-  const visibleMessages = currentMessages.filter((message) => {
+  const visibleMessages = orderedCurrentMessages.filter((message) => {
     if (!hasAssistantMessage) return true
     if (!normalizedRawSessionTitle) return true
     if (message.role !== 'user') return true
     if (!firstUserMessage || message.id !== firstUserMessage.id) return true
     return String(message.content || '').trim() !== normalizedRawSessionTitle
   })
-  const canOperateSession = !messagesQuery.isFetching && !messagesQuery.error && currentMessages.length > 0
+  const latestVisibleUserMessage = [...visibleMessages].reverse().find((message) => message.role === 'user') || null
+  const latestVisibleAssistantMessage = [...visibleMessages].reverse().find((message) => message.role === 'assistant') || null
+  const hasPersistedPendingUserMessage =
+    !!pendingUserMessage &&
+    latestVisibleUserMessage?.content.trim() === pendingUserMessage.content.trim()
+  const showPendingUserMessage = !!pendingUserMessage && !hasPersistedPendingUserMessage
+  const latestAssistantContent = latestVisibleAssistantMessage
+    ? splitThinkingContent(latestVisibleAssistantMessage.content || '').content.trim()
+    : ''
+  const hasPersistedStreamReply = !isStreaming && !!streamPreview.trim() && latestAssistantContent === streamPreview.trim()
+  const showStreamCard = (isStreaming || !!streamError || !!streamPreview || streamEvents.length > 0) && !hasPersistedStreamReply
+  const canOperateSession = !messagesQuery.isFetching && !messagesQuery.error && orderedCurrentMessages.length > 0
   const canSubmitMessage = !!draftMessage.trim() && !isStreaming
 
   useEffect(() => {
@@ -191,14 +232,38 @@ export function ChatPage() {
     })
   }, [followUpRecordId, followUpQuery.error])
 
+  useEffect(() => {
+    const container = messageListRef.current
+    if (!container) return
+
+    const frameId = window.requestAnimationFrame(() => {
+      container.scrollTop = container.scrollHeight
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+    }
+  }, [activeSessionId, visibleMessages.length, showPendingUserMessage, showStreamCard, streamEvents.length, streamPreview, streamError])
+
+  const resetTransientStreamState = () => {
+    setPendingUserMessage(null)
+    setStreamError(null)
+    setStreamPreview('')
+    setStreamEvents([])
+    setIsStreaming(false)
+    streamAbortRef.current = null
+  }
+
   const handleCreateSession = () => {
     const newSessionId = createLocalSessionId()
+    resetTransientStreamState()
     setActiveSessionId(newSessionId)
     setMobilePane('messages')
     setActionFeedback({ kind: 'success', message: '已创建新会话，可直接开始提问。' })
   }
 
   const handleSwitchSession = (sessionId: string) => {
+    resetTransientStreamState()
     setActiveSessionId(sessionId)
     setMobilePane('messages')
     setActionFeedback(null)
@@ -235,7 +300,7 @@ export function ChatPage() {
     }
 
     const sessionLabel = currentSession?.title || '问股会话'
-    const markdown = formatChatSessionAsMarkdown(currentMessages, sessionLabel)
+    const markdown = formatChatSessionAsMarkdown(orderedCurrentMessages, sessionLabel)
     downloadChatSessionMarkdown(markdown, sessionLabel)
     setActionFeedback({ kind: 'success', message: '会话已导出为 Markdown。' })
   }
@@ -248,7 +313,7 @@ export function ChatPage() {
 
     setActionFeedback(null)
     const sessionLabel = currentSession?.title || '问股会话'
-    const markdown = formatChatSessionAsMarkdown(currentMessages, sessionLabel)
+    const markdown = formatChatSessionAsMarkdown(orderedCurrentMessages, sessionLabel)
 
     try {
       await sendMutation.mutateAsync({
@@ -287,6 +352,13 @@ export function ChatPage() {
     const message = draftMessage.trim()
     if (!message || isStreaming) return
 
+    const optimisticUserMessage: ChatSessionMessage = {
+      id: `pending-user-${Date.now()}`,
+      role: 'user',
+      content: message,
+      createdAt: new Date().toISOString(),
+    }
+
     const requestPayload: ChatRequestPayload = {
       message,
       sessionId: activeSessionId,
@@ -298,6 +370,8 @@ export function ChatPage() {
     setStreamError(null)
     setStreamPreview('')
     setStreamEvents([])
+    setPendingUserMessage(optimisticUserMessage)
+    setDraftMessage('')
     setIsStreaming(true)
 
     const controller = new AbortController()
@@ -317,36 +391,46 @@ export function ChatPage() {
       if (!result.success) {
         const errorMessage = result.error || '问股请求失败，请稍后重试。'
         setStreamError(errorMessage)
+        setDraftMessage((value) => (value.trim() ? value : message))
         setActionFeedback({ kind: 'error', message: errorMessage })
         return
       }
 
       const nextSessionId = result.sessionId || activeSessionId
-      setDraftMessage('')
       if (!followUpConsumed && followUpContext) {
         setFollowUpConsumed(true)
       }
 
       if (nextSessionId !== activeSessionId) {
         setActiveSessionId(nextSessionId)
-        await sessionsQuery.refetch()
-      } else {
-        await Promise.all([sessionsQuery.refetch(), messagesQuery.refetch()])
       }
 
+      await Promise.all([
+        sessionsQuery.refetch(),
+        nextSessionId === activeSessionId
+          ? messagesQuery.refetch()
+          : queryClient.fetchQuery({
+              queryKey: ['chat-session-messages', nextSessionId],
+              queryFn: () => agentApi.getChatSessionMessages(nextSessionId, 200),
+            }),
+      ])
+
+      resetTransientStreamState()
       setActionFeedback({ kind: 'success', message: '消息已发送，AI 回复已更新。' })
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
+        setStreamError('本次请求已取消，可调整问题后重试。')
+        setDraftMessage((value) => (value.trim() ? value : message))
         setActionFeedback({ kind: 'error', message: '已取消本次流式请求。' })
       } else {
         const parsed = getParsedApiError(error)
         setStreamError(parsed.message)
+        setDraftMessage((value) => (value.trim() ? value : message))
         setActionFeedback({ kind: 'error', message: parsed.message })
       }
     } finally {
       setIsStreaming(false)
       streamAbortRef.current = null
-      await messagesQuery.refetch()
     }
   }
 
@@ -388,6 +472,7 @@ export function ChatPage() {
               onClick={handleCreateFromPanel}
               className="rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-2.5 py-1.5 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover"
               data-testid={isDesktop ? 'chat-new-session' : 'chat-new-session-mobile'}
+              disabled={isStreaming}
             >
               新建会话
             </button>
@@ -425,8 +510,9 @@ export function ChatPage() {
                 <button
                   type="button"
                   onClick={() => handleSwitchFromPanel(session.sessionId)}
-                  className="w-full text-left"
+                  className="w-full text-left disabled:cursor-not-allowed disabled:opacity-70"
                   data-testid={isDesktop ? `chat-session-item-${session.sessionId}` : `chat-mobile-session-item-${session.sessionId}`}
+                  disabled={isStreaming}
                 >
                   <p className="truncate text-sm font-semibold text-slate-900" title={sessionTitle}>
                     {sessionTitleCompact}
@@ -445,7 +531,7 @@ export function ChatPage() {
                       type="button"
                       onClick={() => void handleDeleteSession(session.sessionId)}
                       className="rounded-md border border-rose-300/80 dsa-theme-bg-soft px-2 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={deleteMutation.isPending}
+                      disabled={deleteMutation.isPending || isStreaming}
                       aria-label={`删除会话-${session.title || session.sessionId}`}
                     >
                       删除
@@ -500,9 +586,9 @@ export function ChatPage() {
       ) : null}
 
       <article
-          className={`${mobilePane === 'messages' ? 'block' : 'hidden'} rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4 lg:block lg:min-h-[calc(100vh-6rem)]`}
-          data-testid="chat-message-panel"
-        >
+        className={`${mobilePane === 'messages' ? 'block' : 'hidden'} rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4 lg:block lg:min-h-[calc(100vh-6rem)]`}
+        data-testid="chat-message-panel"
+      >
           <h2 hidden data-testid="page-title-chat">
             问股
           </h2>
@@ -512,7 +598,7 @@ export function ChatPage() {
               className="rounded-lg border dsa-theme-border-subtle dsa-theme-bg-soft-70 px-2.5 py-1 text-xs font-medium dsa-theme-text-accent-strong"
               data-testid="chat-session-context-status"
             >
-              {isCurrentServerSession ? '云端会话 · 已持久化' : '本地草稿 · 尚未入库'} · 当前消息 {currentMessages.length} 条 · 当前策略{' '}
+              {isCurrentServerSession ? '云端会话 · 已持久化' : '本地草稿 · 尚未入库'} · 当前消息 {orderedCurrentMessages.length} 条 · 当前策略{' '}
               {selectedSkillDisplayName}
             </p>
             <button
@@ -591,54 +677,20 @@ export function ChatPage() {
 
             {messagesQuery.isFetching ? <p className="mt-2 text-sm text-slate-600">正在加载消息...</p> : null}
             {messagesQuery.error ? <p className="mt-2 text-sm text-rose-700">{getParsedApiError(messagesQuery.error).message}</p> : null}
-            {!messagesQuery.isFetching && !messagesQuery.error && visibleMessages.length === 0 ? (
+            {!messagesQuery.isFetching && !messagesQuery.error && visibleMessages.length === 0 && !showPendingUserMessage && !showStreamCard ? (
               <p className="mt-2 text-sm text-slate-600" data-testid="chat-empty-state">
                 当前会话还没有消息。可以直接在下方输入区发起第一条提问。
               </p>
             ) : null}
 
-            {streamEvents.length > 0 || isStreaming || streamError ? (
-              <div className="mt-3 rounded-xl border dsa-theme-border-subtle dsa-theme-bg-soft-70 p-3" data-testid="chat-stream-panel">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] dsa-theme-text-accent-muted" data-testid="chat-stream-status">
-                    {isStreaming ? '流式分析进行中' : streamError ? '流式分析失败' : '流式分析完成'}
-                  </p>
-                  {isStreaming ? (
-                    <button
-                      type="button"
-                      onClick={handleCancelStreaming}
-                      className="rounded-md border border-rose-300/80 dsa-theme-bg-soft px-2 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100"
-                      data-testid="chat-stream-cancel"
-                    >
-                      取消请求
-                    </button>
-                  ) : null}
-                </div>
-                {streamError ? <p className="mt-2 text-xs text-rose-700">{streamError}</p> : null}
-
-                {streamEvents.length > 0 ? (
-                  <details className="mt-2 rounded-lg border dsa-theme-border-subtle bg-white p-2" open={isStreaming}>
-                    <summary className="cursor-pointer text-xs font-semibold text-slate-700">思考过程 ({streamEvents.length})</summary>
-                    <ol className="mt-2 space-y-1 text-xs text-slate-600">
-                      {streamEvents.map((event, index) => (
-                        <li key={`${event.type}-${index}`} data-testid={`chat-stream-event-${index}`}>
-                          {formatStreamEventLabel(event)}
-                        </li>
-                      ))}
-                    </ol>
-                  </details>
-                ) : null}
-              </div>
-            ) : null}
-
-            <div className="mt-3 min-h-[18rem] flex-1 space-y-2 overflow-y-auto pr-1">
+            <div className="mt-3 min-h-[18rem] flex-1 space-y-2 overflow-y-auto pr-1" data-testid="chat-message-list" ref={messageListRef}>
               {visibleMessages.map((message) => {
                 const isUser = message.role === 'user'
                 const parsedMessage = splitThinkingContent(message.content || '')
                 return (
                   <div
                     key={message.id}
-                    className={`rounded-xl border px-3 py-2 ${
+                    className={`space-y-2 rounded-xl border px-3 py-2 text-sm leading-relaxed ${
                       isUser ? 'border-sky-200/70 bg-sky-50 text-slate-800' : 'dsa-theme-border-subtle bg-slate-50 text-slate-800'
                     }`}
                   >
@@ -655,26 +707,107 @@ export function ChatPage() {
                     </div>
 
                     {!isUser && parsedMessage.thinking ? (
-                      <details className="mt-2 rounded-lg border dsa-theme-border-subtle bg-white p-2">
+                      <details className="rounded-lg border dsa-theme-border-subtle bg-white p-2">
                         <summary className="cursor-pointer text-xs font-semibold dsa-theme-text-accent-muted">思考过程</summary>
                         <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">{parsedMessage.thinking}</p>
                       </details>
                     ) : null}
 
-                    <div className="mt-2 text-sm leading-relaxed text-slate-800">
-                      <MessageMarkdown content={parsedMessage.content || message.content || '（空内容）'} />
-                    </div>
-                    <p className="mt-1 text-[11px] text-slate-500">{formatDateTime(message.createdAt || undefined)}</p>
+                    <MessageMarkdown content={parsedMessage.content || message.content || '（空内容）'} />
+                    <p className="text-[11px] text-slate-500">{formatDateTime(message.createdAt || undefined)}</p>
                   </div>
                 )
               })}
 
-              {isStreaming && streamPreview ? (
-                <div className="rounded-xl border dsa-theme-border-accent-soft dsa-theme-bg-soft px-3 py-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.08em] dsa-theme-text-accent-strong">AI (流式预览)</p>
-                  <div className="mt-1 text-sm text-slate-800">
-                    <MessageMarkdown content={streamPreview} />
+              {showPendingUserMessage && pendingUserMessage ? (
+                <div
+                  className="space-y-2 rounded-xl border border-sky-200/70 bg-sky-50 px-3 py-2 text-sm leading-relaxed text-slate-800"
+                  data-testid="chat-pending-user-message"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">用户</p>
+                    <span className="text-[11px] text-slate-500">刚刚发送</span>
                   </div>
+                  <MessageMarkdown content={pendingUserMessage.content || '（空内容）'} />
+                  <p className="text-[11px] text-slate-500">{formatDateTime(pendingUserMessage.createdAt || undefined)}</p>
+                </div>
+              ) : null}
+
+              {showStreamCard ? (
+                <div
+                  className={`space-y-2 rounded-xl border px-3 py-2 text-sm leading-relaxed text-slate-800 ${
+                    isStreaming
+                      ? 'dsa-theme-border-accent-soft dsa-theme-bg-soft'
+                      : streamError
+                        ? 'border-rose-200 bg-rose-50'
+                        : 'dsa-theme-border-subtle bg-slate-50'
+                  }`}
+                  data-testid="chat-stream-panel"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em] dsa-theme-text-accent-strong">AI</p>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          isStreaming
+                            ? 'dsa-theme-bg-accent text-slate-800'
+                            : streamError
+                              ? 'bg-rose-100 text-rose-700'
+                              : 'bg-emerald-100 text-emerald-700'
+                        }`}
+                        data-testid="chat-stream-status"
+                      >
+                        {isStreaming ? '思考中' : streamError ? '未完成' : '已完成'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!isStreaming && streamPreview ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleCopyMessage('chat-stream-preview', streamPreview)}
+                          className="rounded-md border dsa-theme-border-default bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600 transition hover:dsa-theme-bg-soft"
+                          data-testid="chat-copy-stream-preview"
+                        >
+                          {copiedMessageId === 'chat-stream-preview' ? '已复制' : '复制回复'}
+                        </button>
+                      ) : null}
+                      {isStreaming ? (
+                        <button
+                          type="button"
+                          onClick={handleCancelStreaming}
+                          className="rounded-md border border-rose-300/80 dsa-theme-bg-soft px-2 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100"
+                          data-testid="chat-stream-cancel"
+                        >
+                          取消请求
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {streamPreview ? (
+                    <MessageMarkdown content={streamPreview} />
+                  ) : (
+                    <p className="text-sm leading-relaxed text-slate-600">
+                      {streamError ? streamError : '正在整理这次回答，内容会直接续写在这条 AI 消息里。'}
+                    </p>
+                  )}
+
+                  {streamEvents.length > 0 ? (
+                    <details className="rounded-lg border dsa-theme-border-subtle bg-white p-2" open={isStreaming}>
+                      <summary className="cursor-pointer text-xs font-semibold text-slate-700">思考过程 ({streamEvents.length})</summary>
+                      <ol className="mt-2 space-y-1 text-xs text-slate-600">
+                        {streamEvents.map((event, index) => (
+                          <li key={`${event.type}-${index}`} data-testid={`chat-stream-event-${index}`}>
+                            {formatStreamEventLabel(event)}
+                          </li>
+                        ))}
+                      </ol>
+                    </details>
+                  ) : null}
+
+                  <p className="text-[11px] text-slate-500">
+                    {formatDateTime(pendingUserMessage?.createdAt || undefined) || '刚刚'}
+                  </p>
                 </div>
               ) : null}
             </div>
