@@ -181,6 +181,7 @@ export function ChatPage() {
     : ''
   const hasPersistedStreamReply = !isStreaming && !!streamPreview.trim() && latestAssistantContent === streamPreview.trim()
   const showStreamCard = (isStreaming || !!streamError || !!streamPreview || streamEvents.length > 0) && !hasPersistedStreamReply
+  const latestStreamLabel = streamEvents.length ? formatStreamEventLabel(streamEvents[streamEvents.length - 1]) : null
   const canOperateSession = !messagesQuery.isFetching && !messagesQuery.error && orderedCurrentMessages.length > 0
   const canSubmitMessage = !!draftMessage.trim() && !isStreaming
 
@@ -737,7 +738,7 @@ export function ChatPage() {
                 <div
                   className={`space-y-2 rounded-xl border px-3 py-2 text-sm leading-relaxed text-slate-800 ${
                     isStreaming
-                      ? 'dsa-theme-border-accent-soft dsa-theme-bg-soft'
+                      ? 'dsa-theme-border-subtle bg-slate-50'
                       : streamError
                         ? 'border-rose-200 bg-rose-50'
                         : 'dsa-theme-border-subtle bg-slate-50'
@@ -746,17 +747,18 @@ export function ChatPage() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.08em] dsa-theme-text-accent-strong">AI</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">AI</p>
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                          isStreaming
-                            ? 'dsa-theme-bg-accent text-slate-800'
-                            : streamError
-                              ? 'bg-rose-100 text-rose-700'
-                              : 'bg-emerald-100 text-emerald-700'
+                        className={`inline-flex items-center gap-1 text-[11px] font-medium ${
+                          isStreaming ? 'dsa-theme-text-accent-muted' : streamError ? 'text-rose-700' : 'text-emerald-700'
                         }`}
                         data-testid="chat-stream-status"
                       >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            isStreaming ? 'dsa-theme-bg-accent' : streamError ? 'bg-rose-500' : 'bg-emerald-500'
+                          }`}
+                        />
                         {isStreaming ? '思考中' : streamError ? '未完成' : '已完成'}
                       </span>
                     </div>
@@ -768,17 +770,17 @@ export function ChatPage() {
                           className="rounded-md border dsa-theme-border-default bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600 transition hover:dsa-theme-bg-soft"
                           data-testid="chat-copy-stream-preview"
                         >
-                          {copiedMessageId === 'chat-stream-preview' ? '已复制' : '复制回复'}
+                          {copiedMessageId === 'chat-stream-preview' ? '已复制' : '复制'}
                         </button>
                       ) : null}
                       {isStreaming ? (
                         <button
                           type="button"
                           onClick={handleCancelStreaming}
-                          className="rounded-md border border-rose-300/80 dsa-theme-bg-soft px-2 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100"
+                          className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100"
                           data-testid="chat-stream-cancel"
                         >
-                          取消请求
+                          取消
                         </button>
                       ) : null}
                     </div>
@@ -788,12 +790,12 @@ export function ChatPage() {
                     <MessageMarkdown content={streamPreview} />
                   ) : (
                     <p className="text-sm leading-relaxed text-slate-600">
-                      {streamError ? streamError : '正在整理这次回答，内容会直接续写在这条 AI 消息里。'}
+                      {streamError || latestStreamLabel || '正在整理这次回答，内容会直接续写在这条 AI 消息里。'}
                     </p>
                   )}
 
                   {streamEvents.length > 0 ? (
-                    <details className="rounded-lg border dsa-theme-border-subtle bg-white p-2" open={isStreaming}>
+                    <details className="rounded-lg border dsa-theme-border-subtle bg-white/85 p-2" open={isStreaming}>
                       <summary className="cursor-pointer text-xs font-semibold text-slate-700">思考过程 ({streamEvents.length})</summary>
                       <ol className="mt-2 space-y-1 text-xs text-slate-600">
                         {streamEvents.map((event, index) => (
@@ -841,7 +843,7 @@ export function ChatPage() {
                         value={effectiveSelectedSkillId}
                         onChange={(event) => setSelectedSkillId(event.target.value)}
                         aria-label="策略选择"
-                        className="h-8 w-[11rem] shrink-0 rounded-lg border dsa-theme-border-default bg-white px-3 text-sm text-slate-800 outline-none transition dsa-theme-focus-border-soft focus:ring-2 dsa-theme-focus-ring"
+                        className="h-7 w-[11rem] shrink-0 rounded-lg border dsa-theme-border-default bg-white px-2.5 text-[13px] text-slate-800 outline-none transition dsa-theme-focus-border-soft focus:ring-2 dsa-theme-focus-ring"
                         data-testid="chat-skill-select"
                         disabled={!allSkills.length}
                       >
@@ -887,7 +889,7 @@ export function ChatPage() {
                   data-testid="chat-send-message"
                   disabled={!canSubmitMessage}
                 >
-                  {isStreaming ? '流式中...' : '发送提问'}
+                  {isStreaming ? '发送中...' : '发送提问'}
                 </button>
               </div>
             </div>
