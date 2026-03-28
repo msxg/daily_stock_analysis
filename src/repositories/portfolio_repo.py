@@ -82,11 +82,14 @@ class PortfolioRepository:
                 include_inactive=include_inactive,
             )
 
-    def list_accounts(self, include_inactive: bool = False) -> List[PortfolioAccount]:
+    def list_accounts(self, include_inactive: bool = False, owner_id: Optional[str] = None) -> List[PortfolioAccount]:
         with self.db.get_session() as session:
             query = select(PortfolioAccount)
             if not include_inactive:
                 query = query.where(PortfolioAccount.is_active.is_(True))
+            owner = (owner_id or "").strip()
+            if owner:
+                query = query.where(PortfolioAccount.owner_id == owner)
             rows = session.execute(query.order_by(PortfolioAccount.id.asc())).scalars().all()
             return list(rows)
 
@@ -258,6 +261,24 @@ class PortfolioRepository:
     def delete_corporate_action(self, action_id: int) -> bool:
         with self.portfolio_write_session() as session:
             return self.delete_corporate_action_in_session(session=session, action_id=action_id)
+
+    def get_trade_event(self, trade_id: int) -> Optional[PortfolioTrade]:
+        with self.db.get_session() as session:
+            return session.execute(
+                select(PortfolioTrade).where(PortfolioTrade.id == trade_id).limit(1)
+            ).scalar_one_or_none()
+
+    def get_cash_ledger_event(self, entry_id: int) -> Optional[PortfolioCashLedger]:
+        with self.db.get_session() as session:
+            return session.execute(
+                select(PortfolioCashLedger).where(PortfolioCashLedger.id == entry_id).limit(1)
+            ).scalar_one_or_none()
+
+    def get_corporate_action_event(self, action_id: int) -> Optional[PortfolioCorporateAction]:
+        with self.db.get_session() as session:
+            return session.execute(
+                select(PortfolioCorporateAction).where(PortfolioCorporateAction.id == action_id).limit(1)
+            ).scalar_one_or_none()
 
     def has_trade_uid(self, account_id: int, trade_uid: Optional[str]) -> bool:
         """Return True when trade_uid already exists in the account."""
@@ -570,6 +591,7 @@ class PortfolioRepository:
         self,
         *,
         account_id: Optional[int],
+        owner_id: Optional[str],
         date_from: Optional[date],
         date_to: Optional[date],
         symbol: Optional[str],
@@ -581,6 +603,10 @@ class PortfolioRepository:
             conditions = []
             if account_id is not None:
                 conditions.append(PortfolioTrade.account_id == account_id)
+            owner = (owner_id or "").strip()
+            if owner:
+                allowed_accounts = select(PortfolioAccount.id).where(PortfolioAccount.owner_id == owner)
+                conditions.append(PortfolioTrade.account_id.in_(allowed_accounts))
             if date_from is not None:
                 conditions.append(PortfolioTrade.trade_date >= date_from)
             if date_to is not None:
@@ -610,6 +636,7 @@ class PortfolioRepository:
         self,
         *,
         account_id: Optional[int],
+        owner_id: Optional[str],
         date_from: Optional[date],
         date_to: Optional[date],
         direction: Optional[str],
@@ -620,6 +647,10 @@ class PortfolioRepository:
             conditions = []
             if account_id is not None:
                 conditions.append(PortfolioCashLedger.account_id == account_id)
+            owner = (owner_id or "").strip()
+            if owner:
+                allowed_accounts = select(PortfolioAccount.id).where(PortfolioAccount.owner_id == owner)
+                conditions.append(PortfolioCashLedger.account_id.in_(allowed_accounts))
             if date_from is not None:
                 conditions.append(PortfolioCashLedger.event_date >= date_from)
             if date_to is not None:
@@ -647,6 +678,7 @@ class PortfolioRepository:
         self,
         *,
         account_id: Optional[int],
+        owner_id: Optional[str],
         date_from: Optional[date],
         date_to: Optional[date],
         symbol: Optional[str],
@@ -658,6 +690,10 @@ class PortfolioRepository:
             conditions = []
             if account_id is not None:
                 conditions.append(PortfolioCorporateAction.account_id == account_id)
+            owner = (owner_id or "").strip()
+            if owner:
+                allowed_accounts = select(PortfolioAccount.id).where(PortfolioAccount.owner_id == owner)
+                conditions.append(PortfolioCorporateAction.account_id.in_(allowed_accounts))
             if date_from is not None:
                 conditions.append(PortfolioCorporateAction.effective_date >= date_from)
             if date_to is not None:
@@ -769,6 +805,7 @@ class PortfolioRepository:
         as_of: date,
         cost_method: str,
         account_id: Optional[int] = None,
+        owner_id: Optional[str] = None,
         lookback_days: int = 180,
     ) -> List[PortfolioDailySnapshot]:
         """Load snapshot rows in ascending date order for risk monitoring."""
@@ -781,6 +818,10 @@ class PortfolioRepository:
             )
             if account_id is not None:
                 query = query.where(PortfolioDailySnapshot.account_id == account_id)
+            owner = (owner_id or "").strip()
+            if owner:
+                allowed_accounts = select(PortfolioAccount.id).where(PortfolioAccount.owner_id == owner)
+                query = query.where(PortfolioDailySnapshot.account_id.in_(allowed_accounts))
             rows = session.execute(
                 query.order_by(
                     PortfolioDailySnapshot.snapshot_date.asc(),

@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### 新功能
+
+- 👥 **多用户与租户预留基础能力落地（后端 + `dsa-ui`）** — 新增 `Tenant/User/TenantMembership/UserSession/UserPreference` 数据模型与 `AuthIdentityService`；认证链路新增 `/api/v1/auth/me`，中间件注入 principal（用户/租户/能力）；`dsa-ui` 登录改为账号+密码，`AuthGate` 切换到 `/auth/me`，设置页按系统管理员权限控制系统级能力可见性。
+- 🧑‍💼 **`dsa-ui` 新增“用户管理”独立导航页** — 左侧导航新增“用户管理”入口（系统管理员可见），支持查看用户列表、创建普通用户/系统管理员账号，并复用现有后端 `/api/v1/auth/users` 接口（不改后端契约）；设置页不再承载该功能区。
+- 🔐 **`dsa-ui` 用户管理补齐“删除用户 + 管理员重置密码”** — 用户管理页新增每行操作：`重置密码` 与 `删除用户`（禁止删除当前登录账号）；后端新增并复用 `/api/v1/auth/users/{id}/reset-password` 与 `DELETE /api/v1/auth/users/{id}`，保持既有认证体系与 API 风格一致。
+- 🛡️ **设置页新增“账号安全”分类** — “修改当前用户密码”从 `UI` 分类迁移至新分类 `账号安全`，`UI` 分类仅保留主题切换能力，普通用户与管理员均可在 `账号安全` 中修改个人密码。
+- 🔐 **认证兼容层补齐，保持旧行为可回归** — 在保留新账号体系的同时，补齐 `/auth/settings`、`/auth/logout`、`/auth/status` 的 legacy 兼容语义，降低旧部署与旧测试链路的迁移风险。
+- 🧩 **用户数据隔离增强** — 聊天会话按 `user_id` 归属过滤；持仓账户、交易、流水、风险快照按 owner 用户隔离；分析台与回测保持租户共享策略预留。
+
+### 修复
+
+- 🧯 **用户删除在部分环境 `DELETE` 受限时可自动兼容** — 新增后端兼容别名 `POST /api/v1/auth/users/{id}/delete`，前端删除用户在遇到 `405 Method Not Allowed` 时会自动回退到该别名，修复“点击删除用户返回 Method Not Allowed”的场景（常见于旧后端进程或代理层只放行 GET/POST）。
+- 🪟 **用户管理交互升级为统一弹窗流程** — 移除原生 `window.confirm`，删除用户改为样式统一的确认弹窗；“新增用户”和“重置密码”改为按钮触发弹窗表单，不再默认占用列表下方空间，提升页面整洁度与一致性。
+- ♻️ **Web 壳页面改为禁用缓存，避免前端热修复被旧页面壳卡住** — `/` 与 SPA 回退路由返回 `index.html` 时追加 `Cache-Control: no-store` 等响应头，降低浏览器沿用旧版入口 HTML 导致“代码已修但页面仍显示旧交互”的概率。
+
+### 测试
+
+- ✅ **后端多用户改造回归通过** — `auth/system_config/portfolio/agent` 相关单元与集成测试组已通过（关键批次 `91 + 91` 用例通过）。
+- ✅ **`dsa-ui` 测试基线完成适配** — 单元测试、集成测试、构建、Playwright E2E、视觉回归与性能阈值检查已通过；新增 `/auth/me` 的 MSW 模拟并修复集成断言。
+- ✅ **`dsa-ui` 后端联调 E2E（凭据模式）通过** — 使用真实后端测试账号执行 `npm run test:e2e:backend`，`dashboard-backend` 与 `chat-backend` 场景均已通过，并修正用例中“登录前捕获到 401 响应”的误判问题。
+- 🔁 **后端联调 E2E 增强可恢复性** — `@backend` Playwright 用例新增“自动检测登录页并尝试登录”能力；若未提供 `DSA_UI_E2E_PASSWORD`（或 `DSA_E2E_PASSWORD`），用例会自动 `skip` 并给出明确提示，避免无凭据环境误报失败。
+
 ## [3.11.0] - 2026-03-27
 
 ### 发布亮点

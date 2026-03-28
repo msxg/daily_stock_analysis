@@ -12,7 +12,9 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from api.authz import get_identity_service
 from src.auth import COOKIE_NAME, is_auth_enabled, verify_session
+from src.services.auth_identity_service import Principal
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +54,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         cookie_val = request.cookies.get(COOKIE_NAME)
-        if not cookie_val or not verify_session(cookie_val):
+        if not cookie_val:
             return JSONResponse(
                 status_code=401,
                 content={
@@ -61,7 +63,47 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 },
             )
 
-        return await call_next(request)
+        principal = get_identity_service().resolve_principal_from_session(cookie_val)
+        if principal is not None:
+            request.state.principal = principal
+            return await call_next(request)
+
+        # Backward compatibility: keep old file-based admin session valid.
+        if verify_session(cookie_val):
+            request.state.principal = Principal(
+                user_id=0,
+                username="legacy_admin",
+                display_name="Legacy Admin",
+                email="",
+                tenant_id=0,
+                tenant_slug="legacy",
+                tenant_name="Legacy Workspace",
+                tenant_role="system_admin",
+                is_system_admin=True,
+                capabilities=(
+                    "analysis.read",
+                    "auth.manage",
+                    "backtest.read",
+                    "chat.read",
+                    "chat.write",
+                    "dashboard.read",
+                    "portfolio.read",
+                    "portfolio.write",
+                    "system.config.read",
+                    "system.config.write",
+                    "tenants.manage",
+                    "users.manage",
+                ),
+            )
+            return await call_next(request)
+
+        return JSONResponse(
+            status_code=401,
+            content={
+                "error": "unauthorized",
+                "message": "Login required",
+            },
+        )
 
 
 def add_auth_middleware(app):

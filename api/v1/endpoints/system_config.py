@@ -6,8 +6,9 @@ from __future__ import annotations
 import logging
 import os
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
+from api.authz import is_runtime_auth_enabled, require_system_admin
 from api.deps import get_system_config_service
 from api.v1.schemas.common import ErrorResponse
 from api.v1.schemas.system_config import (
@@ -48,6 +49,12 @@ def _ensure_desktop_mode() -> None:
         )
 
 
+def _ensure_system_admin_if_enabled(request: Request | None) -> None:
+    """Require system-admin role when runtime auth is enabled."""
+    if request is not None and is_runtime_auth_enabled():
+        require_system_admin(request)
+
+
 @router.get(
     "/config",
     response_model=SystemConfigResponse,
@@ -60,10 +67,12 @@ def _ensure_desktop_mode() -> None:
     description="Read current configuration from .env and return raw values.",
 )
 def get_system_config(
+    request: Request = None,
     include_schema: bool = Query(True, description="Whether to include schema metadata"),
     service: SystemConfigService = Depends(get_system_config_service),
 ) -> SystemConfigResponse:
     """Load and return current system configuration."""
+    _ensure_system_admin_if_enabled(request)
     try:
         payload = service.get_config(include_schema=include_schema)
         return SystemConfigResponse.model_validate(payload)
@@ -91,16 +100,26 @@ def get_system_config(
     description="Update key-value pairs in .env. Mask token preserves existing secret values.",
 )
 def update_system_config(
-    request: UpdateSystemConfigRequest,
+    request: Request = None,
+    payload: UpdateSystemConfigRequest | None = None,
     service: SystemConfigService = Depends(get_system_config_service),
 ) -> UpdateSystemConfigResponse:
     """Validate and persist system configuration updates."""
+    if payload is None and isinstance(request, UpdateSystemConfigRequest):
+        payload = request
+        request = None
+    if payload is None:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "validation_error", "message": "Missing request payload"},
+        )
+    _ensure_system_admin_if_enabled(request)
     try:
         payload = service.update(
-            config_version=request.config_version,
-            items=[item.model_dump() for item in request.items],
-            mask_token=request.mask_token,
-            reload_now=request.reload_now,
+            config_version=payload.config_version,
+            items=[item.model_dump() for item in payload.items],
+            mask_token=payload.mask_token,
+            reload_now=payload.reload_now,
         )
         return UpdateSystemConfigResponse.model_validate(payload)
     except ConfigValidationError as exc:
@@ -145,9 +164,11 @@ def update_system_config(
     description="Desktop-only endpoint that returns the raw saved .env content.",
 )
 def export_desktop_system_config(
+    request: Request = None,
     service: SystemConfigService = Depends(get_system_config_service),
 ) -> ExportSystemConfigResponse:
     """Export the active `.env` file for desktop backup."""
+    _ensure_system_admin_if_enabled(request)
     _ensure_desktop_mode()
     try:
         payload = service.export_desktop_env()
@@ -190,16 +211,26 @@ def export_desktop_system_config(
     description="Desktop-only endpoint that merges raw .env text into the saved configuration.",
 )
 def import_desktop_system_config(
-    request: ImportSystemConfigRequest,
+    request: Request = None,
+    payload: ImportSystemConfigRequest | None = None,
     service: SystemConfigService = Depends(get_system_config_service),
 ) -> UpdateSystemConfigResponse:
     """Import a desktop `.env` backup into the active config."""
+    if payload is None and isinstance(request, ImportSystemConfigRequest):
+        payload = request
+        request = None
+    if payload is None:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "validation_error", "message": "Missing request payload"},
+        )
+    _ensure_system_admin_if_enabled(request)
     _ensure_desktop_mode()
     try:
         payload = service.import_desktop_env(
-            config_version=request.config_version,
-            content=request.content,
-            reload_now=request.reload_now,
+            config_version=payload.config_version,
+            content=payload.content,
+            reload_now=payload.reload_now,
         )
         return UpdateSystemConfigResponse.model_validate(payload)
     except ConfigImportError as exc:
@@ -250,12 +281,22 @@ def import_desktop_system_config(
     description="Validate submitted configuration values without writing to .env.",
 )
 def validate_system_config(
-    request: ValidateSystemConfigRequest,
+    request: Request = None,
+    payload: ValidateSystemConfigRequest | None = None,
     service: SystemConfigService = Depends(get_system_config_service),
 ) -> ValidateSystemConfigResponse:
     """Run pre-save validation only."""
+    if payload is None and isinstance(request, ValidateSystemConfigRequest):
+        payload = request
+        request = None
+    if payload is None:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "validation_error", "message": "Missing request payload"},
+        )
+    _ensure_system_admin_if_enabled(request)
     try:
-        payload = service.validate(items=[item.model_dump() for item in request.items])
+        payload = service.validate(items=[item.model_dump() for item in payload.items])
         return ValidateSystemConfigResponse.model_validate(payload)
     except Exception as exc:
         logger.error("Failed to validate system configuration: %s", exc, exc_info=True)
@@ -279,19 +320,29 @@ def validate_system_config(
     description="Run a minimal LLM request against one unsaved or saved channel definition.",
 )
 def test_llm_channel(
-    request: TestLLMChannelRequest,
+    request: Request = None,
+    payload: TestLLMChannelRequest | None = None,
     service: SystemConfigService = Depends(get_system_config_service),
 ) -> TestLLMChannelResponse:
     """Validate and test one channel definition without writing `.env`."""
+    if payload is None and isinstance(request, TestLLMChannelRequest):
+        payload = request
+        request = None
+    if payload is None:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "validation_error", "message": "Missing request payload"},
+        )
+    _ensure_system_admin_if_enabled(request)
     try:
         payload = service.test_llm_channel(
-            name=request.name,
-            protocol=request.protocol,
-            base_url=request.base_url,
-            api_key=request.api_key,
-            models=request.models,
-            enabled=request.enabled,
-            timeout_seconds=request.timeout_seconds,
+            name=payload.name,
+            protocol=payload.protocol,
+            base_url=payload.base_url,
+            api_key=payload.api_key,
+            models=payload.models,
+            enabled=payload.enabled,
+            timeout_seconds=payload.timeout_seconds,
         )
         return TestLLMChannelResponse.model_validate(payload)
     except (ValueError, TypeError) as exc:
@@ -324,9 +375,11 @@ def test_llm_channel(
     description="Return categorized field metadata used for dynamic settings form rendering.",
 )
 def get_system_config_schema(
+    request: Request = None,
     service: SystemConfigService = Depends(get_system_config_service),
 ) -> SystemConfigSchemaResponse:
     """Return schema metadata for system configuration fields."""
+    _ensure_system_admin_if_enabled(request)
     try:
         payload = service.get_schema()
         return SystemConfigSchemaResponse.model_validate(payload)

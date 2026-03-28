@@ -10,27 +10,34 @@ type AuthGateProps = {
 export function AuthGate({ children }: AuthGateProps) {
   const location = useLocation()
 
-  const authStatusQuery = useQuery({
-    queryKey: ['auth-gate-status'],
-    queryFn: () => authApi.getStatus(),
+  const authMeQuery = useQuery({
+    queryKey: ['auth-gate-me'],
+    queryFn: () => authApi.getMe(),
+    retry: false,
   })
 
-  if (authStatusQuery.isFetching) {
+  if (authMeQuery.isFetching) {
     return <>{children}</>
   }
 
-  if (authStatusQuery.error) {
+  if (authMeQuery.error) {
+    const rawError = authMeQuery.error as { response?: { status?: number } }
+    const statusCode = rawError?.response?.status
+    if (statusCode === 401) {
+      const redirect = encodeURIComponent(`${location.pathname}${location.search}`)
+      return <Navigate to={`/login?redirect=${redirect}`} replace />
+    }
     return (
       <div className="grid min-h-screen place-items-center bg-slate-50 p-6">
         <div className="max-w-md rounded-2xl border border-rose-200 bg-white p-5 text-sm text-rose-700" data-testid="auth-gate-error">
-          认证状态检测失败：{getParsedApiError(authStatusQuery.error).message}
+          认证状态检测失败：{getParsedApiError(authMeQuery.error).message}
         </div>
       </div>
     )
   }
 
-  const status = authStatusQuery.data
-  if (status?.authEnabled && !status.loggedIn) {
+  const authContext = authMeQuery.data
+  if (authContext?.authEnabled && !authContext.authenticated) {
     const redirect = encodeURIComponent(`${location.pathname}${location.search}`)
     return <Navigate to={`/login?redirect=${redirect}`} replace />
   }

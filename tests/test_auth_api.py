@@ -24,6 +24,7 @@ import src.auth as auth
 from api.middlewares.auth import AuthMiddleware
 from api.v1.endpoints import auth as auth_endpoint
 from src.config import Config
+from src.services.auth_identity_service import Principal
 
 
 def _reset_auth_globals() -> None:
@@ -76,11 +77,163 @@ class AuthApiTestCase(unittest.TestCase):
             client=SimpleNamespace(host="127.0.0.1"),
         )
 
+    @staticmethod
+    def _build_admin_request(user_id: int = 1):
+        return SimpleNamespace(
+            headers={},
+            url=SimpleNamespace(scheme="http"),
+            cookies={},
+            client=SimpleNamespace(host="127.0.0.1"),
+            state=SimpleNamespace(
+                principal=Principal(
+                    user_id=user_id,
+                    username="admin",
+                    display_name="Admin",
+                    email="",
+                    tenant_id=1,
+                    tenant_slug="default",
+                    tenant_name="Default Workspace",
+                    tenant_role="tenant_admin",
+                    is_system_admin=True,
+                    capabilities=("users.manage", "system.config.read", "system.config.write"),
+                )
+            ),
+        )
+
     def test_auth_status_when_password_not_set(self) -> None:
         data = asyncio.run(auth_endpoint.auth_status(self._build_request()))
         self.assertTrue(data["authEnabled"])
         self.assertFalse(data["passwordSet"])
         self.assertFalse(data["loggedIn"])
+
+    def test_auth_me_requires_session_when_auth_enabled(self) -> None:
+        response = asyncio.run(auth_endpoint.auth_me(self._build_request()))
+        self.assertEqual(response.status_code, 401)
+        self.assertIn(b'"error":"unauthorized"', response.body)
+
+    def test_auth_me_returns_identity_after_login(self) -> None:
+        login_response = asyncio.run(
+            auth_endpoint.auth_login(
+                self._build_request(),
+                auth_endpoint.LoginRequest(password="newpass123", passwordConfirm="newpass123"),
+            )
+        )
+        self.assertEqual(login_response.status_code, 200)
+        session_cookie = login_response.headers["set-cookie"].split("dsa_session=", 1)[1].split(";", 1)[0]
+
+        payload = asyncio.run(auth_endpoint.auth_me(self._build_request(cookies={"dsa_session": session_cookie})))
+        self.assertTrue(payload["authenticated"])
+        self.assertTrue(payload["authEnabled"])
+        self.assertIsNotNone(payload["user"])
+        self.assertEqual(payload["user"]["username"], "admin")
+        self.assertGreaterEqual(len(payload["capabilities"]), 1)
+
+    def test_admin_can_reset_and_delete_user(self) -> None:
+        bootstrap = asyncio.run(
+            auth_endpoint.auth_login(
+                self._build_request(),
+                auth_endpoint.LoginRequest(username="admin", password="admin123", passwordConfirm="admin123"),
+            )
+        )
+        self.assertEqual(bootstrap.status_code, 200)
+
+        admin_request = self._build_admin_request(user_id=1)
+        create_result = asyncio.run(
+            auth_endpoint.auth_create_user(
+                admin_request,
+                auth_endpoint.CreateUserRequest(
+                    username="ops_user",
+                    password="oldpass123",
+                    passwordConfirm="oldpass123",
+                ),
+            )
+        )
+        self.assertIsInstance(create_result, dict)
+        user_id = create_result["user"]["id"]
+
+        reset_result = asyncio.run(
+            auth_endpoint.auth_reset_user_password(
+                admin_request,
+                user_id,
+                auth_endpoint.ResetUserPasswordRequest(
+                    newPassword="newpass123",
+                    newPasswordConfirm="newpass123",
+                ),
+            )
+        )
+        self.assertEqual(reset_result.get("ok"), True)
+
+        old_login = asyncio.run(
+            auth_endpoint.auth_login(
+                self._build_request(),
+                auth_endpoint.LoginRequest(username="ops_user", password="oldpass123"),
+            )
+        )
+        self.assertEqual(old_login.status_code, 401)
+
+        new_login = asyncio.run(
+            auth_endpoint.auth_login(
+                self._build_request(),
+                auth_endpoint.LoginRequest(username="ops_user", password="newpass123"),
+            )
+        )
+        self.assertEqual(new_login.status_code, 200)
+
+        delete_result = asyncio.run(auth_endpoint.auth_delete_user(admin_request, user_id))
+        self.assertIsInstance(delete_result, dict)
+        self.assertEqual(delete_result.get("deleted"), 1)
+
+        users_payload = asyncio.run(auth_endpoint.auth_list_users(admin_request))
+        usernames = [item["username"] for item in users_payload["users"]]
+        self.assertNotIn("ops_user", usernames)
+
+        deleted_login = asyncio.run(
+            auth_endpoint.auth_login(
+                self._build_request(),
+                auth_endpoint.LoginRequest(username="ops_user", password="newpass123"),
+            )
+        )
+        self.assertEqual(deleted_login.status_code, 401)
+
+    def test_admin_delete_self_is_rejected(self) -> None:
+        bootstrap = asyncio.run(
+            auth_endpoint.auth_login(
+                self._build_request(),
+                auth_endpoint.LoginRequest(username="admin", password="admin123", passwordConfirm="admin123"),
+            )
+        )
+        self.assertEqual(bootstrap.status_code, 200)
+
+        response = asyncio.run(auth_endpoint.auth_delete_user(self._build_admin_request(user_id=1), 1))
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(b'"error":"invalid_user"', response.body)
+
+    def test_admin_can_delete_user_via_post_compat_endpoint(self) -> None:
+        bootstrap = asyncio.run(
+            auth_endpoint.auth_login(
+                self._build_request(),
+                auth_endpoint.LoginRequest(username="admin", password="admin123", passwordConfirm="admin123"),
+            )
+        )
+        self.assertEqual(bootstrap.status_code, 200)
+
+        admin_request = self._build_admin_request(user_id=1)
+        create_result = asyncio.run(
+            auth_endpoint.auth_create_user(
+                admin_request,
+                auth_endpoint.CreateUserRequest(
+                    username="compat_user",
+                    password="compat123",
+                    passwordConfirm="compat123",
+                ),
+            )
+        )
+        self.assertIsInstance(create_result, dict)
+        user_id = create_result["user"]["id"]
+
+        delete_result = asyncio.run(auth_endpoint.auth_delete_user_compat(admin_request, user_id))
+        self.assertIsInstance(delete_result, dict)
+        self.assertEqual(delete_result.get("deleted"), 1)
 
     def test_login_first_time_set_initial_password(self) -> None:
         response = asyncio.run(

@@ -180,6 +180,27 @@ const mockSystemConfigItems = [
   },
 ]
 
+let mockAuthUsers = [
+  {
+    id: 1,
+    username: 'admin',
+    display_name: 'Admin',
+    email: 'admin@example.com',
+    status: 'active',
+    is_system_admin: true,
+    created_at: '2026-03-20T09:00:00+08:00',
+  },
+  {
+    id: 2,
+    username: 'demo_user',
+    display_name: 'Demo User',
+    email: 'demo@example.com',
+    status: 'active',
+    is_system_admin: false,
+    created_at: '2026-03-21T09:00:00+08:00',
+  },
+]
+
 export const handlers = [
   http.get('/api/v1/health', () => HttpResponse.json({ ok: true })),
   http.get('/api/v1/agent/skills', () =>
@@ -827,6 +848,38 @@ export const handlers = [
       setup_state: 'enabled',
     }),
   ),
+  http.get('/api/v1/auth/me', () =>
+    HttpResponse.json({
+      authenticated: true,
+      auth_enabled: true,
+      user: {
+        id: 1,
+        username: 'admin',
+        display_name: 'Admin',
+        email: 'admin@example.com',
+        is_system_admin: true,
+      },
+      active_tenant: {
+        id: 1,
+        slug: 'default',
+        name: 'Default Workspace',
+        role: 'system_admin',
+      },
+      available_tenants: [
+        {
+          id: 1,
+          slug: 'default',
+          name: 'Default Workspace',
+          role: 'system_admin',
+        },
+      ],
+      capabilities: [
+        'system.config.read',
+        'system.config.write',
+        'users.manage',
+      ],
+    }),
+  ),
   http.post('/api/v1/auth/settings', async ({ request }) => {
     const body = (await request.json()) as { authEnabled?: boolean }
     return HttpResponse.json({
@@ -840,4 +893,105 @@ export const handlers = [
   http.post('/api/v1/auth/login', () => HttpResponse.json({ success: true })),
   http.post('/api/v1/auth/change-password', () => HttpResponse.json({ success: true })),
   http.post('/api/v1/auth/logout', () => HttpResponse.json({ success: true })),
+  http.get('/api/v1/auth/users', () =>
+    HttpResponse.json({
+      users: mockAuthUsers,
+    }),
+  ),
+  http.post('/api/v1/auth/users', async ({ request }) => {
+    const body = (await request.json()) as {
+      username?: string
+      password?: string
+      passwordConfirm?: string
+      displayName?: string
+      email?: string
+      isSystemAdmin?: boolean
+    }
+    const username = String(body.username || '').trim().toLowerCase()
+    const password = String(body.password || '')
+    const passwordConfirm = String(body.passwordConfirm || '')
+    if (!username) {
+      return HttpResponse.json(
+        { error: 'username_required', message: '请输入用户名' },
+        { status: 400 },
+      )
+    }
+    if (!password) {
+      return HttpResponse.json(
+        { error: 'password_required', message: '请输入密码' },
+        { status: 400 },
+      )
+    }
+    if (password !== passwordConfirm) {
+      return HttpResponse.json(
+        { error: 'password_mismatch', message: '两次输入的密码不一致' },
+        { status: 400 },
+      )
+    }
+    if (mockAuthUsers.some((item) => item.username === username)) {
+      return HttpResponse.json(
+        { error: 'invalid_user', message: '用户名已存在' },
+        { status: 400 },
+      )
+    }
+
+    const created = {
+      id: Math.max(...mockAuthUsers.map((item) => item.id)) + 1,
+      username,
+      display_name: String(body.displayName || '').trim() || username,
+      email: String(body.email || '').trim(),
+      status: 'active',
+      is_system_admin: Boolean(body.isSystemAdmin),
+      created_at: '2026-03-28T12:00:00+08:00',
+    }
+    mockAuthUsers = [...mockAuthUsers, created]
+    return HttpResponse.json({ user: created })
+  }),
+  http.post('/api/v1/auth/users/:userId/reset-password', ({ params }) => {
+    const userId = Number(params.userId)
+    const exists = mockAuthUsers.some((item) => item.id === userId)
+    if (!exists) {
+      return HttpResponse.json(
+        { error: 'invalid_user', message: '用户不存在' },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json({ ok: true })
+  }),
+  http.delete('/api/v1/auth/users/:userId', ({ params }) => {
+    const userId = Number(params.userId)
+    if (userId === 1) {
+      return HttpResponse.json(
+        { error: 'invalid_user', message: '不能删除当前登录账号' },
+        { status: 400 },
+      )
+    }
+    const before = mockAuthUsers.length
+    mockAuthUsers = mockAuthUsers.filter((item) => item.id !== userId)
+    if (mockAuthUsers.length === before) {
+      return HttpResponse.json(
+        { error: 'invalid_user', message: '用户不存在' },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json({ deleted: 1 })
+  }),
+  http.post('/api/v1/auth/users/:userId/delete', ({ params }) => {
+    const userId = Number(params.userId)
+    if (userId === 1) {
+      return HttpResponse.json(
+        { error: 'invalid_user', message: '不能删除当前登录账号' },
+        { status: 400 },
+      )
+    }
+    const before = mockAuthUsers.length
+    mockAuthUsers = mockAuthUsers.filter((item) => item.id !== userId)
+    if (mockAuthUsers.length === before) {
+      return HttpResponse.json(
+        { error: 'invalid_user', message: '用户不存在' },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json({ deleted: 1 })
+  }),
 ]

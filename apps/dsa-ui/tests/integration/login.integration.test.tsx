@@ -60,7 +60,7 @@ describe('Login page', () => {
     )
 
     renderLogin('/login')
-    expect(await screen.findByText('首次设置密码')).toBeInTheDocument()
+    expect(await screen.findByTestId('page-title-login')).toHaveTextContent('初始化管理员账号')
 
     await user.type(screen.getByTestId('login-password'), 'first-password')
     await user.type(screen.getByTestId('login-password-confirm'), 'different-password')

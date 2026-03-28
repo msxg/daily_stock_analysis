@@ -8,6 +8,7 @@ import { ChatPage } from '@/features/chat/pages/ChatPage'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { PortfolioPage } from '@/features/portfolio/pages/PortfolioPage'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
+import { UsersPage } from '@/features/users/pages/UsersPage'
 
 const appRoutes: RouteObject[] = [
   {
@@ -21,6 +22,7 @@ const appRoutes: RouteObject[] = [
       { path: '/chat', element: <ChatPage /> },
       { path: '/portfolio', element: <PortfolioPage /> },
       { path: '/backtest', element: <BacktestPage /> },
+      { path: '/users', element: <UsersPage /> },
       { path: '/settings', element: <SettingsPage /> },
     ],
   },

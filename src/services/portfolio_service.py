@@ -102,8 +102,8 @@ class PortfolioService:
         )
         return self._account_to_dict(row)
 
-    def list_accounts(self, include_inactive: bool = False) -> List[Dict[str, Any]]:
-        rows = self.repo.list_accounts(include_inactive=include_inactive)
+    def list_accounts(self, include_inactive: bool = False, owner_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        rows = self.repo.list_accounts(include_inactive=include_inactive, owner_id=owner_id)
         return [self._account_to_dict(r) for r in rows]
 
     def update_account(
@@ -141,7 +141,8 @@ class PortfolioService:
             return None
         return self._account_to_dict(row)
 
-    def deactivate_account(self, account_id: int) -> bool:
+    def deactivate_account(self, account_id: int, owner_id: Optional[str] = None) -> bool:
+        self._require_active_account(account_id, owner_id=owner_id)
         return self.repo.deactivate_account(account_id)
 
     # ------------------------------------------------------------------
@@ -151,6 +152,7 @@ class PortfolioService:
         self,
         *,
         account_id: int,
+        owner_id: Optional[str] = None,
         symbol: str,
         trade_date: date,
         side: str,
@@ -178,7 +180,7 @@ class PortfolioService:
         dedup_hash_norm = (dedup_hash or "").strip() or None
         try:
             with self.repo.portfolio_write_session() as session:
-                account = self._require_active_account_in_session(session=session, account_id=account_id)
+                account = self._require_active_account_in_session(session=session, account_id=account_id, owner_id=owner_id)
                 market_norm = self._normalize_market(market or account.market)
                 currency_norm = self._normalize_currency(currency or self._default_currency_for_market(market_norm))
                 self._validate_trade_identity(
@@ -221,6 +223,7 @@ class PortfolioService:
         self,
         *,
         account_id: int,
+        owner_id: Optional[str] = None,
         event_date: date,
         direction: str,
         amount: float,
@@ -233,7 +236,7 @@ class PortfolioService:
         if amount <= 0:
             raise ValueError("amount must be > 0")
         with self.repo.portfolio_write_session() as session:
-            account = self._require_active_account_in_session(session=session, account_id=account_id)
+            account = self._require_active_account_in_session(session=session, account_id=account_id, owner_id=owner_id)
             currency_norm = self._normalize_currency(currency or account.base_currency)
             row = self.repo.add_cash_ledger_in_session(
                 session=session,
@@ -250,6 +253,7 @@ class PortfolioService:
         self,
         *,
         account_id: int,
+        owner_id: Optional[str] = None,
         symbol: str,
         effective_date: date,
         action_type: str,
@@ -270,7 +274,7 @@ class PortfolioService:
             if split_ratio is None or split_ratio <= 0:
                 raise ValueError("split_ratio must be > 0 for split_adjustment")
         with self.repo.portfolio_write_session() as session:
-            account = self._require_active_account_in_session(session=session, account_id=account_id)
+            account = self._require_active_account_in_session(session=session, account_id=account_id, owner_id=owner_id)
             market_norm = self._normalize_market(market or account.market)
             currency_norm = self._normalize_currency(currency or self._default_currency_for_market(market_norm))
             symbol_norm = canonical_stock_code(symbol)
@@ -290,15 +294,30 @@ class PortfolioService:
             )
             return {"id": int(row.id)}
 
-    def delete_trade_event(self, trade_id: int) -> bool:
+    def delete_trade_event(self, trade_id: int, owner_id: Optional[str] = None) -> bool:
+        if owner_id:
+            row = self.repo.get_trade_event(trade_id)
+            if row is None:
+                return False
+            self._require_active_account(int(row.account_id), owner_id=owner_id)
         with self.repo.portfolio_write_session() as session:
             return self.repo.delete_trade_in_session(session=session, trade_id=trade_id)
 
-    def delete_cash_ledger_event(self, entry_id: int) -> bool:
+    def delete_cash_ledger_event(self, entry_id: int, owner_id: Optional[str] = None) -> bool:
+        if owner_id:
+            row = self.repo.get_cash_ledger_event(entry_id)
+            if row is None:
+                return False
+            self._require_active_account(int(row.account_id), owner_id=owner_id)
         with self.repo.portfolio_write_session() as session:
             return self.repo.delete_cash_ledger_in_session(session=session, entry_id=entry_id)
 
-    def delete_corporate_action_event(self, action_id: int) -> bool:
+    def delete_corporate_action_event(self, action_id: int, owner_id: Optional[str] = None) -> bool:
+        if owner_id:
+            row = self.repo.get_corporate_action_event(action_id)
+            if row is None:
+                return False
+            self._require_active_account(int(row.account_id), owner_id=owner_id)
         with self.repo.portfolio_write_session() as session:
             return self.repo.delete_corporate_action_in_session(session=session, action_id=action_id)
 
@@ -306,6 +325,7 @@ class PortfolioService:
         self,
         *,
         account_id: Optional[int] = None,
+        owner_id: Optional[str] = None,
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
         symbol: Optional[str] = None,
@@ -314,7 +334,7 @@ class PortfolioService:
         page_size: int = 20,
     ) -> Dict[str, Any]:
         if account_id is not None:
-            self._require_active_account(account_id)
+            self._require_active_account(account_id, owner_id=owner_id)
         page, page_size = self._validate_paging(page=page, page_size=page_size)
         if date_from is not None and date_to is not None and date_from > date_to:
             raise ValueError("date_from must be <= date_to")
@@ -333,6 +353,7 @@ class PortfolioService:
 
         rows, total = self.repo.query_trades(
             account_id=account_id,
+            owner_id=owner_id,
             date_from=date_from,
             date_to=date_to,
             symbol=symbol_norm,
@@ -351,6 +372,7 @@ class PortfolioService:
         self,
         *,
         account_id: Optional[int] = None,
+        owner_id: Optional[str] = None,
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
         direction: Optional[str] = None,
@@ -358,7 +380,7 @@ class PortfolioService:
         page_size: int = 20,
     ) -> Dict[str, Any]:
         if account_id is not None:
-            self._require_active_account(account_id)
+            self._require_active_account(account_id, owner_id=owner_id)
         page, page_size = self._validate_paging(page=page, page_size=page_size)
         if date_from is not None and date_to is not None and date_from > date_to:
             raise ValueError("date_from must be <= date_to")
@@ -371,6 +393,7 @@ class PortfolioService:
 
         rows, total = self.repo.query_cash_ledger(
             account_id=account_id,
+            owner_id=owner_id,
             date_from=date_from,
             date_to=date_to,
             direction=direction_norm,
@@ -388,6 +411,7 @@ class PortfolioService:
         self,
         *,
         account_id: Optional[int] = None,
+        owner_id: Optional[str] = None,
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
         symbol: Optional[str] = None,
@@ -396,7 +420,7 @@ class PortfolioService:
         page_size: int = 20,
     ) -> Dict[str, Any]:
         if account_id is not None:
-            self._require_active_account(account_id)
+            self._require_active_account(account_id, owner_id=owner_id)
         page, page_size = self._validate_paging(page=page, page_size=page_size)
         if date_from is not None and date_to is not None and date_from > date_to:
             raise ValueError("date_from must be <= date_to")
@@ -415,6 +439,7 @@ class PortfolioService:
 
         rows, total = self.repo.query_corporate_actions(
             account_id=account_id,
+            owner_id=owner_id,
             date_from=date_from,
             date_to=date_to,
             symbol=symbol_norm,
@@ -436,6 +461,7 @@ class PortfolioService:
         self,
         *,
         account_id: Optional[int] = None,
+        owner_id: Optional[str] = None,
         as_of: Optional[date] = None,
         cost_method: str = "fifo",
     ) -> Dict[str, Any]:
@@ -443,10 +469,10 @@ class PortfolioService:
         method = self._normalize_cost_method(cost_method)
 
         if account_id is not None:
-            account = self._require_active_account(account_id)
+            account = self._require_active_account(account_id, owner_id=owner_id)
             account_rows = [account]
         else:
-            account_rows = self.repo.list_accounts(include_inactive=False)
+            account_rows = self.repo.list_accounts(include_inactive=False, owner_id=owner_id)
 
         accounts_payload: List[Dict[str, Any]] = []
         aggregate_currency = "CNY"
@@ -567,6 +593,7 @@ class PortfolioService:
         self,
         *,
         account_id: Optional[int] = None,
+        owner_id: Optional[str] = None,
         as_of: Optional[date] = None,
     ) -> Dict[str, Any]:
         """Refresh account FX pairs online with stale fallback when fetch fails."""
@@ -574,9 +601,9 @@ class PortfolioService:
         config = get_config()
         refresh_enabled = bool(getattr(config, "portfolio_fx_update_enabled", True))
         if account_id is not None:
-            account_rows = [self._require_active_account(account_id)]
+            account_rows = [self._require_active_account(account_id, owner_id=owner_id)]
         else:
-            account_rows = self.repo.list_accounts(include_inactive=False)
+            account_rows = self.repo.list_accounts(include_inactive=False, owner_id=owner_id)
 
         summary = {
             "as_of": as_of_date.isoformat(),
@@ -1276,13 +1303,16 @@ class PortfolioService:
             return None
         return value
 
-    def _require_active_account(self, account_id: int) -> Any:
+    def _require_active_account(self, account_id: int, owner_id: Optional[str] = None) -> Any:
         account = self.repo.get_account(account_id, include_inactive=False)
         if account is None:
             raise ValueError(f"Active account not found: {account_id}")
+        owner = (owner_id or "").strip()
+        if owner and (account.owner_id or "").strip() != owner:
+            raise ValueError(f"Account access denied: {account_id}")
         return account
 
-    def _require_active_account_in_session(self, *, session: Any, account_id: int) -> Any:
+    def _require_active_account_in_session(self, *, session: Any, account_id: int, owner_id: Optional[str] = None) -> Any:
         account = self.repo.get_account_in_session(
             session=session,
             account_id=account_id,
@@ -1290,6 +1320,9 @@ class PortfolioService:
         )
         if account is None:
             raise ValueError(f"Active account not found: {account_id}")
+        owner = (owner_id or "").strip()
+        if owner and (account.owner_id or "").strip() != owner:
+            raise ValueError(f"Account access denied: {account_id}")
         return account
 
     def _has_trade_uid(self, *, account_id: int, trade_uid: str, session: Optional[Any] = None) -> bool:

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { ensureBackendAuthenticated } from './auth'
 
 function pickSessions(payload: unknown): Array<{ title?: string }> {
   if (Array.isArray(payload)) return payload as Array<{ title?: string }>
@@ -17,13 +18,14 @@ test.describe('Chat backend integration @backend', () => {
   test.skip(process.env.RUN_BACKEND_E2E !== '1', 'Set RUN_BACKEND_E2E=1 to run backend integration tests')
 
   test('loads chat sessions from real backend and keeps local new-session flow', async ({ page }) => {
+    await ensureBackendAuthenticated(page, '/chat')
     const sessionsResponsePromise = page.waitForResponse(
       (response) =>
         response.url().includes('/api/v1/agent/chat/sessions')
-        && response.request().method() === 'GET',
+        && response.request().method() === 'GET'
+        && response.status() === 200,
     )
-
-    await page.goto('/chat')
+    await page.reload()
     await expect(page.getByTestId('page-chat')).toBeVisible()
     await expect(page.getByTestId('chat-session-manager-toggle')).toBeVisible()
     await expect(page.getByTestId('chat-export-session')).toBeVisible()

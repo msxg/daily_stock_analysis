@@ -21,6 +21,7 @@ describe('Settings workspace', () => {
     await user.click(screen.getByTestId('settings-category-ui'))
     expect(await screen.findByTestId('settings-ui-panel')).toBeInTheDocument()
     expect(screen.getByText('Theme')).toBeInTheDocument()
+    expect(screen.queryByTestId('settings-password-panel')).not.toBeInTheDocument()
     expect(screen.queryByTestId('settings-auth-panel')).not.toBeInTheDocument()
     expect(screen.queryByTestId('settings-env-panel')).not.toBeInTheDocument()
     expect(screen.queryByTestId('settings-llm-panel')).not.toBeInTheDocument()
@@ -28,6 +29,9 @@ describe('Settings workspace', () => {
     await user.click(screen.getByTestId('settings-ui-theme-mint'))
     expect(document.documentElement).toHaveAttribute('data-theme', 'mint')
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('mint')
+
+    await user.click(screen.getByTestId('settings-category-account_security'))
+    expect(await screen.findByTestId('settings-password-panel')).toBeInTheDocument()
 
     await user.click(screen.getByTestId('settings-category-ai_model'))
     const modelField = await screen.findByTestId('settings-field-OPENAI_MODEL')
@@ -43,6 +47,7 @@ describe('Settings workspace', () => {
     expect(await screen.findByTestId('settings-auth-panel')).toBeInTheDocument()
     expect(screen.getByTestId('settings-env-panel')).toBeInTheDocument()
     expect(screen.queryByTestId('settings-llm-panel')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('settings-user-panel')).not.toBeInTheDocument()
 
     await user.click(screen.getByTestId('settings-auth-toggle'))
     await user.click(screen.getByTestId('settings-auth-save'))

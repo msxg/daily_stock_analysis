@@ -21,6 +21,7 @@ const categoryLabel: Record<SystemConfigCategory, string> = {
   agent: 'Agent',
   backtest: '回测',
   ui: 'UI',
+  account_security: '账号安全',
   uncategorized: '未分类',
 }
 
@@ -33,6 +34,7 @@ const categoryOrder: SystemConfigCategory[] = [
   'agent',
   'backtest',
   'ui',
+  'account_security',
   'uncategorized',
 ]
 
@@ -40,6 +42,7 @@ const customSectionCountByCategory: Partial<Record<SystemConfigCategory, number>
   ai_model: 1,
   system: 2,
   ui: 1,
+  account_security: 1,
 }
 
 function normalizeOption(option: string | { label: string; value: string }) {
@@ -81,6 +84,10 @@ export function SettingsPage() {
   const [authPasswordConfirm, setAuthPasswordConfirm] = useState('')
   const [authCurrentPassword, setAuthCurrentPassword] = useState('')
   const [authFeedback, setAuthFeedback] = useState<InlineFeedback>(null)
+  const [accountCurrentPassword, setAccountCurrentPassword] = useState('')
+  const [accountNewPassword, setAccountNewPassword] = useState('')
+  const [accountNewPasswordConfirm, setAccountNewPasswordConfirm] = useState('')
+  const [passwordFeedback, setPasswordFeedback] = useState<InlineFeedback>(null)
 
   const [desktopFeedback, setDesktopFeedback] = useState<InlineFeedback>(null)
   const importInputRef = useRef<HTMLInputElement | null>(null)
@@ -93,14 +100,23 @@ export function SettingsPage() {
   const [channelFeedback, setChannelFeedback] = useState<InlineFeedback>(null)
   const [channelResult, setChannelResult] = useState<TestLLMChannelResponse | null>(null)
 
-  const configQuery = useQuery({
-    queryKey: ['settings-config'],
-    queryFn: () => systemConfigApi.getConfig(true),
-  })
-
   const authStatusQuery = useQuery({
     queryKey: ['settings-auth-status'],
     queryFn: () => authApi.getStatus(),
+  })
+
+  const authMeQuery = useQuery({
+    queryKey: ['settings-auth-me'],
+    queryFn: () => authApi.getMe(),
+    retry: false,
+  })
+
+  const canManageSystem = !(authMeQuery.data?.authEnabled ?? false) || !!authMeQuery.data?.user?.isSystemAdmin
+
+  const configQuery = useQuery({
+    queryKey: ['settings-config'],
+    queryFn: () => systemConfigApi.getConfig(true),
+    enabled: canManageSystem,
   })
 
   const updateMutation = useMutation({
@@ -112,6 +128,10 @@ export function SettingsPage() {
   const authUpdateMutation = useMutation({
     mutationFn: (payload: { authEnabled: boolean; password?: string; passwordConfirm?: string; currentPassword?: string }) =>
       authApi.updateSettings(payload.authEnabled, payload.password, payload.passwordConfirm, payload.currentPassword),
+  })
+  const changePasswordMutation = useMutation({
+    mutationFn: (payload: { currentPassword: string; newPassword: string; newPasswordConfirm: string }) =>
+      authApi.changePassword(payload.currentPassword, payload.newPassword, payload.newPasswordConfirm),
   })
   const testChannelMutation = useMutation({
     mutationFn: systemConfigApi.testLLMChannel,
@@ -138,19 +158,26 @@ export function SettingsPage() {
   }, [allItems])
 
   const categories = useMemo(() => {
+    if (!canManageSystem) {
+      return ['ui', 'account_security'] as SystemConfigCategory[]
+    }
     const value = new Set<SystemConfigCategory>()
     allItems.forEach((item) => value.add((item.schema?.category || 'uncategorized') as SystemConfigCategory))
     value.add('ui')
+    value.add('account_security')
     if (!allItems.length) value.add('base')
     return [...value].sort((left, right) => categoryOrder.indexOf(left) - categoryOrder.indexOf(right))
-  }, [allItems])
+  }, [allItems, canManageSystem])
 
   const effectiveActiveCategory = categories.includes(activeCategory) ? activeCategory : categories[0] || 'base'
 
   const authEnabledDraft = authEnabledOverride ?? authStatusQuery.data?.authEnabled ?? false
 
   const filteredItems = useMemo(() => {
-    if (effectiveActiveCategory === 'ui') {
+    if (!canManageSystem) {
+      return []
+    }
+    if (effectiveActiveCategory === 'ui' || effectiveActiveCategory === 'account_security') {
       return []
     }
 
@@ -164,12 +191,13 @@ export function SettingsPage() {
       const description = item.schema?.description || ''
       return [item.key, title, description].some((value) => value.toLowerCase().includes(keyword))
     })
-  }, [effectiveActiveCategory, allItems, searchKeyword])
+  }, [effectiveActiveCategory, allItems, searchKeyword, canManageSystem])
 
   const activeTheme = getThemeDefinition(theme)
   const showUiSection = effectiveActiveCategory === 'ui'
-  const showSystemSections = effectiveActiveCategory === 'system'
-  const showAiModelSections = effectiveActiveCategory === 'ai_model'
+  const showAccountSecuritySection = effectiveActiveCategory === 'account_security'
+  const showSystemSections = canManageSystem && effectiveActiveCategory === 'system'
+  const showAiModelSections = canManageSystem && effectiveActiveCategory === 'ai_model'
 
   const dirtyKeys = useMemo(() => {
     return allItems
@@ -195,6 +223,10 @@ export function SettingsPage() {
   }
 
   const handleSaveConfig = async () => {
+    if (!canManageSystem) {
+      setConfigFeedback({ kind: 'error', message: '当前账号无系统配置权限。' })
+      return
+    }
     if (!configQuery.data) return
 
     const changedItems = allItems
@@ -245,6 +277,36 @@ export function SettingsPage() {
       })
     } catch (error) {
       setConfigFeedback({ kind: 'error', message: getParsedApiError(error).message })
+    }
+  }
+
+  const handleChangePasswordOnly = async () => {
+    setPasswordFeedback(null)
+    if (!accountCurrentPassword.trim()) {
+      setPasswordFeedback({ kind: 'error', message: '请输入当前密码。' })
+      return
+    }
+    if (!accountNewPassword.trim()) {
+      setPasswordFeedback({ kind: 'error', message: '请输入新密码。' })
+      return
+    }
+    if (accountNewPassword !== accountNewPasswordConfirm) {
+      setPasswordFeedback({ kind: 'error', message: '两次输入的新密码不一致。' })
+      return
+    }
+
+    try {
+      await changePasswordMutation.mutateAsync({
+        currentPassword: accountCurrentPassword.trim(),
+        newPassword: accountNewPassword,
+        newPasswordConfirm: accountNewPasswordConfirm,
+      })
+      setAccountCurrentPassword('')
+      setAccountNewPassword('')
+      setAccountNewPasswordConfirm('')
+      setPasswordFeedback({ kind: 'success', message: '密码已更新。' })
+    } catch (error) {
+      setPasswordFeedback({ kind: 'error', message: getParsedApiError(error).message })
     }
   }
 
@@ -409,12 +471,14 @@ export function SettingsPage() {
             placeholder="搜索 key / 字段标题 / 描述"
             className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800"
             data-testid="settings-search"
+            disabled={!canManageSystem}
           />
           <button
             type="button"
             onClick={handleResetDraft}
             className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft"
             data-testid="settings-reset"
+            disabled={!canManageSystem}
           >
             重置草稿
           </button>
@@ -422,12 +486,15 @@ export function SettingsPage() {
             type="button"
             onClick={() => void handleSaveConfig()}
             className="rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
-            disabled={!dirtyKeys.length || updateMutation.isPending || validateMutation.isPending}
+            disabled={!canManageSystem || !dirtyKeys.length || updateMutation.isPending || validateMutation.isPending}
             data-testid="settings-save"
           >
             {updateMutation.isPending || validateMutation.isPending ? '保存中...' : `保存配置${dirtyKeys.length ? ` (${dirtyKeys.length})` : ''}`}
           </button>
         </div>
+        {!canManageSystem ? (
+          <p className="mt-2 text-xs text-slate-500">当前账号为普通用户，仅可调整 UI 偏好与修改个人密码。</p>
+        ) : null}
         {configFeedback ? (
           <p className={`mt-3 text-sm font-medium ${configFeedback.kind === 'success' ? 'text-emerald-700' : 'text-rose-700'}`}>
             {configFeedback.message}
@@ -465,7 +532,11 @@ export function SettingsPage() {
         <div className="space-y-[var(--dsa-layout-gap)]">
           <section className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-[var(--dsa-card-padding)]">
             <p className="text-xs uppercase tracking-[0.16em] dsa-theme-text-accent-muted">
-              {effectiveActiveCategory === 'ui' ? 'UI 偏好' : '当前分类配置项'}
+              {effectiveActiveCategory === 'ui'
+                ? 'UI 偏好'
+                : effectiveActiveCategory === 'account_security'
+                  ? '账号安全'
+                  : '当前分类配置项'}
             </p>
 
             {showUiSection ? (
@@ -524,7 +595,53 @@ export function SettingsPage() {
                     )
                   })}
                 </div>
+
               </div>
+            ) : showAccountSecuritySection ? (
+              <section className="mt-3 rounded-xl border dsa-theme-border-subtle bg-white p-4" data-testid="settings-password-panel">
+                <p className="text-sm font-semibold text-slate-900">账号安全</p>
+                <p className="mt-1 text-xs text-slate-600">可在此修改当前登录账号密码。</p>
+                <div className="mt-3 grid gap-2 md:grid-cols-3">
+                  <input
+                    type="password"
+                    value={accountCurrentPassword}
+                    onChange={(event) => setAccountCurrentPassword(event.target.value)}
+                    placeholder="当前密码"
+                    className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
+                    data-testid="settings-password-current"
+                  />
+                  <input
+                    type="password"
+                    value={accountNewPassword}
+                    onChange={(event) => setAccountNewPassword(event.target.value)}
+                    placeholder="新密码"
+                    className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
+                    data-testid="settings-password-new"
+                  />
+                  <input
+                    type="password"
+                    value={accountNewPasswordConfirm}
+                    onChange={(event) => setAccountNewPasswordConfirm(event.target.value)}
+                    placeholder="确认新密码"
+                    className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm"
+                    data-testid="settings-password-confirm"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleChangePasswordOnly()}
+                  className="mt-3 rounded-lg border dsa-theme-border-default dsa-theme-bg-accent px-3 py-2 text-xs font-semibold dsa-theme-text-accent transition hover:dsa-theme-bg-accent-hover disabled:opacity-60"
+                  disabled={changePasswordMutation.isPending}
+                  data-testid="settings-password-save"
+                >
+                  {changePasswordMutation.isPending ? '保存中...' : '更新密码'}
+                </button>
+                {passwordFeedback ? (
+                  <p className={`mt-2 text-sm font-medium ${passwordFeedback.kind === 'success' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                    {passwordFeedback.message}
+                  </p>
+                ) : null}
+              </section>
             ) : (
               <>
                 {configQuery.isFetching ? <p className="mt-3 text-sm text-slate-600">正在加载配置...</p> : null}

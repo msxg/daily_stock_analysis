@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { LogOut, Menu, X } from 'lucide-react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { navRoutes, getRouteDescription, getRouteLabel } from '@/app/router/routeManifest'
@@ -15,6 +15,14 @@ export function AppShell() {
   const pageLabel = getRouteLabel(location.pathname)
   const pageDescription = getRouteDescription(location.pathname)
   const [logoutFeedback, setLogoutFeedback] = useState<string | null>(null)
+  const authMeQuery = useQuery({
+    queryKey: ['shell-auth-me'],
+    queryFn: () => authApi.getMe(),
+    retry: false,
+  })
+  const isSystemAdmin = !!authMeQuery.data?.user?.isSystemAdmin
+  const isAuthDisabled = authMeQuery.data?.authEnabled === false
+  const visibleNavRoutes = navRoutes.filter((item) => !item.requiresSystemAdmin || isSystemAdmin || isAuthDisabled)
 
   const logoutMutation = useMutation({
     mutationFn: authApi.logout,
@@ -57,7 +65,7 @@ export function AppShell() {
           </div>
 
           <nav className="space-y-1.5" aria-label="主导航">
-            {navRoutes.map((item) => {
+            {visibleNavRoutes.map((item) => {
               const Icon = item.icon
               return (
                 <NavLink
@@ -105,6 +113,11 @@ export function AppShell() {
                 </div>
               </div>
               <div className="flex items-end gap-2">
+                {authMeQuery.data?.authenticated ? (
+                  <div className="hidden rounded-lg border dsa-theme-border-subtle bg-white/70 px-2.5 py-1 text-[11px] text-slate-600 md:block">
+                    {authMeQuery.data.user?.displayName || authMeQuery.data.user?.username || '用户'}
+                  </div>
+                ) : null}
                 {logoutFeedback ? <p className="hidden text-xs text-rose-700 md:block">{logoutFeedback}</p> : null}
                 <button
                   type="button"
@@ -134,7 +147,7 @@ export function AppShell() {
           >
             <p className="mb-5 px-2 text-xs uppercase tracking-[0.24em] dsa-theme-text-accent-muted">Navigation</p>
             <nav className="space-y-2" aria-label="移动端导航">
-              {navRoutes.map((item) => {
+              {visibleNavRoutes.map((item) => {
                 const Icon = item.icon
                 return (
                   <NavLink
@@ -161,7 +174,7 @@ export function AppShell() {
       ) : null}
 
       <nav className="fixed inset-x-0 bottom-0 z-30 flex h-16 items-center justify-around border-t dsa-theme-border-subtle bg-white/92 backdrop-blur-xl lg:hidden">
-        {navRoutes.map((item) => {
+        {visibleNavRoutes.map((item) => {
           const Icon = item.icon
           const active = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path)
           return (

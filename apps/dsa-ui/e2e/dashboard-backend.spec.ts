@@ -1,21 +1,24 @@
 import { expect, test } from '@playwright/test'
+import { ensureBackendAuthenticated } from './auth'
 
 test.describe('Dashboard backend integration @backend', () => {
   test.skip(process.env.RUN_BACKEND_E2E !== '1', 'Set RUN_BACKEND_E2E=1 to run backend integration tests')
 
   test('loads history and tasks from real backend through proxy', async ({ page }) => {
+    await ensureBackendAuthenticated(page, '/')
     const historyResponsePromise = page.waitForResponse(
       (response) =>
         response.url().includes('/api/v1/history')
-        && response.request().method() === 'GET',
+        && response.request().method() === 'GET'
+        && response.status() === 200,
     )
     const taskResponsePromise = page.waitForResponse(
       (response) =>
         response.url().includes('/api/v1/analysis/tasks')
-        && response.request().method() === 'GET',
+        && response.request().method() === 'GET'
+        && response.status() === 200,
     )
-
-    await page.goto('/')
+    await page.reload()
     await expect(page.getByTestId('page-dashboard')).toBeVisible()
     await expect(page.getByTestId('task-panel')).toBeVisible()
     await expect(page.getByTestId('history-panel')).toBeVisible()

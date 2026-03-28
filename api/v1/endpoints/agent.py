@@ -9,10 +9,11 @@ import logging
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
+from api.authz import get_principal
 from src.config import get_config
 from src.services.agent_model_service import list_agent_model_deployments
 
@@ -39,6 +40,25 @@ TOOL_DISPLAY_NAMES: Dict[str, str] = {
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _build_user_session_prefix(user_id: int) -> str:
+    return f"user_{user_id}"
+
+
+def _normalize_user_scoped_session_id(session_id: Optional[str], user_id: int) -> str:
+    prefix = _build_user_session_prefix(user_id)
+    if session_id:
+        normalized = str(session_id).strip()
+        if normalized.startswith(f"{prefix}:") or normalized == prefix:
+            return normalized
+        return f"{prefix}:{normalized}"
+    return f"{prefix}:{uuid.uuid4()}"
+
+
+def _session_belongs_to_user(session_id: str, user_id: int) -> bool:
+    prefix = _build_user_session_prefix(user_id)
+    return session_id == prefix or session_id.startswith(f"{prefix}:")
 
 class ChatRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
@@ -146,7 +166,7 @@ async def get_strategies():
     )
 
 @router.post("/chat", response_model=ChatResponse)
-async def agent_chat(request: ChatRequest):
+async def agent_chat(request: ChatRequest, http_request: Request = None):
     """
     Chat with the AI Agent.
     """
@@ -155,7 +175,11 @@ async def agent_chat(request: ChatRequest):
     if not config.is_agent_available():
         raise HTTPException(status_code=400, detail="Agent mode is not enabled")
         
-    session_id = request.session_id or str(uuid.uuid4())
+    principal = get_principal(http_request) if http_request is not None else None
+    if principal is not None and principal.user_id > 0:
+        session_id = _normalize_user_scoped_session_id(request.session_id, principal.user_id)
+    else:
+        session_id = request.session_id or str(uuid.uuid4())
     
     try:
         skills = request.effective_skills
@@ -167,6 +191,8 @@ async def agent_chat(request: ChatRequest):
         ctx = dict(request.context or {})
         if skills is not None:
             ctx["skills"] = skills
+        if principal is not None and principal.user_id > 0:
+            ctx["requester_user_id"] = str(principal.user_id)
 
         # Offload the blocking call to a thread to avoid blocking the event loop.
         loop = asyncio.get_running_loop()
@@ -205,7 +231,7 @@ class SessionMessagesResponse(BaseModel):
 
 
 @router.get("/chat/sessions", response_model=SessionsResponse)
-async def list_chat_sessions(limit: int = 50, user_id: Optional[str] = None):
+async def list_chat_sessions(request: Request, limit: int = 50, user_id: Optional[str] = None):
     """获取聊天会话列表
 
     Args:
@@ -217,25 +243,34 @@ async def list_chat_sessions(limit: int = 50, user_id: Optional[str] = None):
             ``feishu_ou_abc``.
     """
     from src.storage import get_db
-    sessions = get_db().get_chat_sessions(
-        limit=limit,
-        session_prefix=user_id,
-        extra_session_ids=[user_id] if user_id else None,
-    )
+    principal = get_principal(request)
+    session_prefix = user_id
+    extra_session_ids = [user_id] if user_id else None
+    if principal is not None and principal.user_id > 0:
+        session_prefix = _build_user_session_prefix(principal.user_id)
+        extra_session_ids = [session_prefix]
+
+    sessions = get_db().get_chat_sessions(limit=limit, session_prefix=session_prefix, extra_session_ids=extra_session_ids)
     return SessionsResponse(sessions=sessions)
 
 
 @router.get("/chat/sessions/{session_id}", response_model=SessionMessagesResponse)
-async def get_chat_session_messages(session_id: str, limit: int = 100):
+async def get_chat_session_messages(request: Request, session_id: str, limit: int = 100):
     """获取单个会话的完整消息"""
+    principal = get_principal(request)
+    if principal is not None and principal.user_id > 0 and not _session_belongs_to_user(session_id, principal.user_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
     from src.storage import get_db
     messages = get_db().get_conversation_messages(session_id, limit=limit)
     return SessionMessagesResponse(session_id=session_id, messages=messages)
 
 
 @router.delete("/chat/sessions/{session_id}")
-async def delete_chat_session(session_id: str):
+async def delete_chat_session(request: Request, session_id: str):
     """删除指定会话"""
+    principal = get_principal(request)
+    if principal is not None and principal.user_id > 0 and not _session_belongs_to_user(session_id, principal.user_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
     from src.storage import get_db
     count = get_db().delete_conversation_session(session_id)
     return {"deleted": count}
@@ -371,7 +406,7 @@ async def agent_research(request: ResearchRequest):
 
 
 @router.post("/chat/stream")
-async def agent_chat_stream(request: ChatRequest):
+async def agent_chat_stream(http_request: Request, request: ChatRequest):
     """
     Chat with the AI Agent, streaming progress via SSE.
     Each SSE event is a JSON object with a 'type' field:
@@ -386,7 +421,11 @@ async def agent_chat_stream(request: ChatRequest):
     if not config.is_agent_available():
         raise HTTPException(status_code=400, detail="Agent mode is not enabled")
 
-    session_id = request.session_id or str(uuid.uuid4())
+    principal = get_principal(http_request)
+    if principal is not None and principal.user_id > 0:
+        session_id = _normalize_user_scoped_session_id(request.session_id, principal.user_id)
+    else:
+        session_id = request.session_id or str(uuid.uuid4())
     loop = asyncio.get_running_loop()
     queue: asyncio.Queue = asyncio.Queue()
 
@@ -396,6 +435,8 @@ async def agent_chat_stream(request: ChatRequest):
     stream_ctx = dict(request.context or {})
     if skills is not None:
         stream_ctx["skills"] = skills
+    if principal is not None and principal.user_id > 0:
+        stream_ctx["requester_user_id"] = str(principal.user_id)
 
     def progress_callback(event: dict):
         # Enrich tool events with display names

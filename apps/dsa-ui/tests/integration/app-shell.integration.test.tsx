@@ -15,6 +15,36 @@ describe('App shell routing', () => {
     let loggedIn = true
 
     server.use(
+      http.get('/api/v1/auth/me', () => {
+        if (!loggedIn) {
+          return HttpResponse.json({ error: 'unauthorized' }, { status: 401 })
+        }
+        return HttpResponse.json({
+          authenticated: true,
+          auth_enabled: true,
+          user: {
+            id: 1,
+            username: 'admin',
+            display_name: 'Admin',
+            is_system_admin: true,
+          },
+          active_tenant: {
+            id: 1,
+            slug: 'default',
+            name: 'Default Workspace',
+            role: 'system_admin',
+          },
+          available_tenants: [
+            {
+              id: 1,
+              slug: 'default',
+              name: 'Default Workspace',
+              role: 'system_admin',
+            },
+          ],
+          capabilities: ['system.config.read', 'system.config.write'],
+        })
+      }),
       http.get('/api/v1/auth/status', () =>
         HttpResponse.json({
           auth_enabled: true,
@@ -40,6 +70,7 @@ describe('App shell routing', () => {
 
   it('redirects to login when auth is enabled but session is missing', async () => {
     server.use(
+      http.get('/api/v1/auth/me', () => HttpResponse.json({ error: 'unauthorized' }, { status: 401 })),
       http.get('/api/v1/auth/status', () =>
         HttpResponse.json({
           auth_enabled: true,

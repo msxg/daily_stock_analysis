@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   MessageSquareQuote,
   Settings2,
+  Users,
 } from 'lucide-react'
 
 export type NavRoute = {
@@ -13,6 +14,7 @@ export type NavRoute = {
   shortLabel: string
   description?: string
   icon: LucideIcon
+  requiresSystemAdmin?: boolean
 }
 
 export const navRoutes: NavRoute[] = [
@@ -43,6 +45,14 @@ export const navRoutes: NavRoute[] = [
     shortLabel: '回测',
     description: '支持筛选、运行、KPI、趋势图与分页结果表，图表统一使用 lightweight-charts。',
     icon: ChartCandlestick,
+  },
+  {
+    path: '/users',
+    label: '用户管理',
+    shortLabel: '用户',
+    description: '支持系统管理员查看用户列表、创建用户、重置用户密码与删除用户。',
+    icon: Users,
+    requiresSystemAdmin: true,
   },
   {
     path: '/settings',

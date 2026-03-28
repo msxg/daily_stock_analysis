@@ -8,6 +8,7 @@ type InlineFeedback = { kind: 'success' | 'error'; message: string } | null
 export function LoginPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [feedback, setFeedback] = useState<InlineFeedback>(null)
@@ -18,8 +19,15 @@ export function LoginPage() {
   })
 
   const loginMutation = useMutation({
-    mutationFn: ({ passwordValue, passwordConfirmValue }: { passwordValue: string; passwordConfirmValue?: string }) =>
-      authApi.login(passwordValue, passwordConfirmValue),
+    mutationFn: ({
+      usernameValue,
+      passwordValue,
+      passwordConfirmValue,
+    }: {
+      usernameValue: string
+      passwordValue: string
+      passwordConfirmValue?: string
+    }) => authApi.login(usernameValue, passwordValue, passwordConfirmValue),
   })
 
   const redirect = useMemo(() => {
@@ -39,6 +47,10 @@ export function LoginPage() {
 
   const handleSubmit = async () => {
     setFeedback(null)
+    if (!username.trim()) {
+      setFeedback({ kind: 'error', message: '请输入用户名。' })
+      return
+    }
     if (!password.trim()) {
       setFeedback({ kind: 'error', message: '请输入密码。' })
       return
@@ -50,6 +62,7 @@ export function LoginPage() {
 
     try {
       await loginMutation.mutateAsync({
+        usernameValue: username.trim(),
         passwordValue: password,
         passwordConfirmValue: isFirstTime ? passwordConfirm : undefined,
       })
@@ -68,7 +81,7 @@ export function LoginPage() {
       <section className="w-full max-w-md rounded-3xl border dsa-theme-border-subtle bg-white/90 p-8 shadow-[0_24px_60px_rgba(15,23,42,0.16)]">
         <p className="text-xs uppercase tracking-[0.2em] dsa-theme-text-accent-soft">Daily Stock Analysis</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900" data-testid="page-title-login">
-          {isFirstTime ? '首次设置密码' : '管理员登录'}
+          {isFirstTime ? '初始化管理员账号' : '账号登录'}
         </h1>
         <p className="mt-2 text-sm text-slate-600" data-testid="login-status">
           {authStatusQuery.isFetching ? '正在检测认证状态...' : null}
@@ -76,20 +89,32 @@ export function LoginPage() {
           {!authStatusQuery.isFetching && !authStatusQuery.error
             ? authStatusQuery.data?.authEnabled
               ? isFirstTime
-                ? '检测到尚未设置密码，请先完成初始化。'
-                : '请输入管理员密码继续。'
+                ? '检测到尚未初始化，请先设置管理员账号。'
+                : '请输入账号密码继续。'
               : '当前系统未启用认证，登录后可在设置页开启。'
             : null}
         </p>
 
         <div className="mt-6 space-y-3" data-testid="login-form">
           <label className="flex flex-col gap-1 text-sm text-slate-600">
+            用户名
+            <input
+              type="text"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              placeholder="请输入账号（默认 admin）"
+              className="rounded-xl border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800 outline-none transition dsa-theme-focus-border focus:ring-2 dsa-theme-focus-ring"
+              data-testid="login-username"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm text-slate-600">
             密码
             <input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder={isFirstTime ? '请设置管理员密码' : '请输入管理员密码'}
+              placeholder={isFirstTime ? '请设置管理员密码' : '请输入账号密码'}
               className="rounded-xl border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800 outline-none transition dsa-theme-focus-border focus:ring-2 dsa-theme-focus-ring"
               data-testid="login-password"
             />

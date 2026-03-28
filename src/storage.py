@@ -591,6 +591,89 @@ class PortfolioFxRate(Base):
     )
 
 
+class Tenant(Base):
+    """Tenant metadata for tenant-scoped data isolation."""
+
+    __tablename__ = 'tenants'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    slug = Column(String(64), nullable=False, unique=True, index=True)
+    name = Column(String(128), nullable=False)
+    status = Column(String(16), nullable=False, default='active', index=True)
+    created_at = Column(DateTime, default=datetime.now, index=True)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class User(Base):
+    """Application users for account-based authentication."""
+
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(64), nullable=False, unique=True, index=True)
+    display_name = Column(String(64))
+    email = Column(String(128), unique=True, index=True)
+    password_salt = Column(String(128), nullable=False)
+    password_hash = Column(String(256), nullable=False)
+    status = Column(String(16), nullable=False, default='active', index=True)
+    is_system_admin = Column(Boolean, nullable=False, default=False, index=True)
+    last_login_at = Column(DateTime, index=True)
+    created_at = Column(DateTime, default=datetime.now, index=True)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class TenantMembership(Base):
+    """User membership in tenant with tenant-scoped role."""
+
+    __tablename__ = 'tenant_memberships'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(Integer, ForeignKey('tenants.id'), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    role = Column(String(24), nullable=False, default='user', index=True)
+    status = Column(String(16), nullable=False, default='active', index=True)
+    created_at = Column(DateTime, default=datetime.now, index=True)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    __table_args__ = (
+        UniqueConstraint('tenant_id', 'user_id', name='uix_tenant_membership_tenant_user'),
+    )
+
+
+class UserSession(Base):
+    """Server-side user session for cookie-backed authentication."""
+
+    __tablename__ = 'user_sessions'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_token = Column(String(192), nullable=False, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    tenant_id = Column(Integer, ForeignKey('tenants.id'), nullable=False, index=True)
+    issued_at = Column(DateTime, default=datetime.now, nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False, index=True)
+    revoked_at = Column(DateTime, index=True)
+    client_ip = Column(String(64))
+    user_agent = Column(String(512))
+    created_at = Column(DateTime, default=datetime.now, index=True)
+
+
+class UserPreference(Base):
+    """Key-value user preference storage (optionally tenant scoped)."""
+
+    __tablename__ = 'user_preferences'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    tenant_id = Column(Integer, ForeignKey('tenants.id'), index=True)
+    key = Column(String(64), nullable=False, index=True)
+    value = Column(Text, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, index=True)
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'tenant_id', 'key', name='uix_user_preference_user_tenant_key'),
+    )
+
+
 class ConversationMessage(Base):
     """
     Agent 对话历史记录表
