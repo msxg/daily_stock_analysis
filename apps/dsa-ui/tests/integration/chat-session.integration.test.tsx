@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '@/app/App'
+import { CHAT_SESSION_STORAGE_KEY } from '@/features/chat/utils/session'
 import { server } from '../../tests/mocks/server'
 
 describe('Chat session management', () => {
@@ -295,5 +296,30 @@ describe('Chat session management', () => {
       expect(writeTextSpy).toHaveBeenCalled()
     })
     expect(await screen.findByText('已复制')).toBeInTheDocument()
+  })
+
+  it('keeps local draft session without triggering 403 permission error', async () => {
+    const user = userEvent.setup()
+    const getMessagesSpy = vi.fn()
+    window.localStorage.setItem(CHAT_SESSION_STORAGE_KEY, 'local-sticky-session')
+
+    server.use(
+      http.get('/api/v1/agent/chat/sessions/:sessionId', ({ params }) => {
+        getMessagesSpy(String(params.sessionId || ''))
+        return HttpResponse.json({
+          session_id: String(params.sessionId || ''),
+          messages: [],
+        })
+      }),
+    )
+
+    window.history.pushState({}, '', '/')
+    render(<App />)
+    await user.click(screen.getAllByRole('link', { name: '问股' })[0])
+
+    expect(await screen.findByTestId('page-chat')).toBeInTheDocument()
+    expect(screen.getByTestId('chat-current-session-id')).toHaveTextContent('local-sticky-session')
+    expect(screen.queryByText('当前账号没有该操作权限。')).not.toBeInTheDocument()
+    expect(getMessagesSpy).not.toHaveBeenCalled()
   })
 })

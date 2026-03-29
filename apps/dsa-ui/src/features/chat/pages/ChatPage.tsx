@@ -121,6 +121,7 @@ export function ChatPage() {
 
   const sessions = mergeSessionsWithDraft(activeSessionId, sessionsQuery.data || [])
   const serverSessionIds = new Set((sessionsQuery.data || []).map((item) => item.sessionId))
+  const shouldFetchMessages = !!activeSessionId && (activeSessionId.startsWith('user_') || serverSessionIds.has(activeSessionId))
   const currentSession = sessions.find((session) => session.sessionId === activeSessionId) || null
   const isCurrentServerSession = !!currentSession && serverSessionIds.has(currentSession.sessionId)
   const currentSessionTitle = normalizeSessionTitle(currentSession?.title, isCurrentServerSession ? '未命名会话' : '新会话')
@@ -135,7 +136,7 @@ export function ChatPage() {
   const messagesQuery = useQuery({
     queryKey: ['chat-session-messages', activeSessionId],
     queryFn: () => agentApi.getChatSessionMessages(activeSessionId, 200),
-    enabled: !!activeSessionId,
+    enabled: shouldFetchMessages,
   })
 
   const currentMessages = messagesQuery.data || []
@@ -254,6 +255,17 @@ export function ChatPage() {
     setIsStreaming(false)
     streamAbortRef.current = null
   }
+
+  useEffect(() => {
+    if (!messagesQuery.error) return
+    const parsed = getParsedApiError(messagesQuery.error)
+    if (parsed.status !== 403) return
+
+    const fallbackSessionId = createLocalSessionId()
+    resetTransientStreamState()
+    setActiveSessionId(fallbackSessionId)
+    setActionFeedback({ kind: 'error', message: '检测到会话权限已变化，已切换到新会话。' })
+  }, [messagesQuery.error])
 
   const handleCreateSession = () => {
     const newSessionId = createLocalSessionId()
