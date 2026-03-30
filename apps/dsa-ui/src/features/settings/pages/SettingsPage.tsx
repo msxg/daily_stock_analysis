@@ -59,6 +59,21 @@ function normalizeFieldValue(item: SystemConfigItem, value: string): string {
   return value
 }
 
+function isMultiValueField(item: SystemConfigItem): boolean {
+  const validation = (item.schema?.validation ?? {}) as Record<string, unknown>
+  return Boolean(validation.multiValue ?? validation.multi_value)
+}
+
+function parseMultiValues(value: string): string[] {
+  if (!value) return ['']
+  const values = value.split(',').map((entry) => entry.trim())
+  return values.length ? values : ['']
+}
+
+function serializeMultiValues(values: string[]): string {
+  return values.map((entry) => entry.trim()).join(',')
+}
+
 function isBooleanTrue(value: string): boolean {
   return ['true', '1', 'yes', 'on'].includes(value.trim().toLowerCase())
 }
@@ -446,7 +461,49 @@ export function SettingsPage() {
       )
     }
 
-    const inputType = schema.uiControl === 'password' ? 'password' : schema.uiControl === 'number' ? 'number' : 'text'
+    if (schema.uiControl === 'time' && isMultiValueField(item)) {
+      const values = parseMultiValues(value)
+      return (
+        <div className="space-y-2">
+          {values.map((entry, index) => (
+            <div className="flex items-center gap-2" key={`${item.key}-${index}`}>
+              <input
+                type="time"
+                value={entry}
+                onChange={(event) => {
+                  const nextValues = [...values]
+                  nextValues[index] = event.target.value
+                  handleDraftValueChange(item.key, serializeMultiValues(nextValues))
+                }}
+                className="flex-1 rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-sm text-slate-800"
+                disabled={!schema.isEditable}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const nextValues = values.filter((_, rowIndex) => rowIndex !== index)
+                  handleDraftValueChange(item.key, serializeMultiValues(nextValues.length ? nextValues : ['']))
+                }}
+                className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-xs font-semibold text-slate-500 transition hover:text-rose-600 disabled:opacity-60"
+                disabled={!schema.isEditable || values.length <= 1}
+              >
+                删除
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => handleDraftValueChange(item.key, serializeMultiValues([...values, '']))}
+            className="rounded-lg border dsa-theme-border-default bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft disabled:opacity-60"
+            disabled={!schema.isEditable}
+          >
+            添加时间点
+          </button>
+        </div>
+      )
+    }
+
+    const inputType = schema.uiControl === 'password' ? 'password' : schema.uiControl === 'number' ? 'number' : schema.uiControl === 'time' ? 'time' : 'text'
     return (
       <input
         type={inputType}

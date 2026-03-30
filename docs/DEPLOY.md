@@ -205,7 +205,8 @@ journalctl -u stock-analyzer -f
 | 配置项 | 默认值 | 说明 |
 |--------|--------|------|
 | `SCHEDULE_ENABLED` | `false` | 是否启用定时任务 |
-| `SCHEDULE_TIME` | `18:00` | 每日执行时间 |
+| `SCHEDULE_TIME` | `18:00` | 每日执行时间（单时间点） |
+| `SCHEDULE_TIMES` | - | 多时间点执行（逗号分隔或 JSON 数组，优先级高于 SCHEDULE_TIME） |
 | `MARKET_REVIEW_ENABLED` | `true` | 是否启用大盘复盘 |
 | `TAVILY_API_KEYS` | - | 新闻搜索（可选） |
 | `MINIMAX_API_KEYS` | - | MiniMax 搜索（可选） |

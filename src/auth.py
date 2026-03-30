@@ -17,6 +17,7 @@ import os
 import secrets
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -424,6 +425,7 @@ def clear_rate_limit(ip: str) -> None:
 def overwrite_password(new_password: str) -> Optional[str]:
     """
     Overwrite stored password without verifying current. For CLI reset only.
+    Also resets database admin user password if users exist.
     Returns error message or None on success.
     """
     if not is_auth_enabled():
@@ -453,10 +455,38 @@ def overwrite_password(new_password: str) -> Optional[str]:
         tmp_path.chmod(0o600)
         tmp_path.replace(cred_path)
         _load_credential_from_file()
-        return None
     except OSError as e:
         logger.error("Failed to write credential file: %s", e)
         return "密码保存失败"
+
+    # Also reset database admin user password if users exist
+    try:
+        from src.services.auth_identity_service import AuthIdentityService
+        from src.storage import DatabaseManager
+
+        db = DatabaseManager.get_instance()
+        identity = AuthIdentityService(db)
+
+        if identity.has_users():
+            from sqlalchemy import select
+            from src.storage import User
+
+            with db.session_scope() as session:
+                admin_user = session.execute(
+                    select(User).where(User.username == "admin", User.status == "active")
+                ).scalar_one_or_none()
+
+                if admin_user is not None:
+                    db_salt_b64, db_hash_b64 = identity._hash_password(new_password)
+                    admin_user.password_salt = db_salt_b64
+                    admin_user.password_hash = db_hash_b64
+                    admin_user.updated_at = datetime.now()
+                    logger.info("Database admin user password also reset")
+    except Exception as e:
+        logger.warning("Failed to reset database admin password: %s", e)
+        # 不阻断流程，旧版密码文件已更新成功
+
+    return None
 
 
 def reset_password_cli() -> int:

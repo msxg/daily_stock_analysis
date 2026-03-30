@@ -14,12 +14,13 @@
 """
 
 import logging
+import re
 import signal
 import sys
 import time
 import threading
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -56,19 +57,27 @@ class GracefulShutdown:
 class Scheduler:
     """
     定时任务调度器
-    
+
     基于 schedule 库实现，支持：
     - 每日定时执行
     - 启动时立即执行
     - 优雅退出
+    - 动态更新定时时间点
     """
-    
-    def __init__(self, schedule_time: str = "18:00"):
+
+    _TIME_PATTERN = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+
+    def __init__(
+        self,
+        schedule_time: str = "18:00",
+        schedule_times: Optional[Sequence[str]] = None,
+    ):
         """
         初始化调度器
-        
+
         Args:
-            schedule_time: 每日执行时间，格式 "HH:MM"
+            schedule_time: 每日执行时间（兼容参数，格式 "HH:MM"）
+            schedule_times: 每日多个执行时间点（HH:MM 列表）
         """
         try:
             import schedule
@@ -76,30 +85,124 @@ class Scheduler:
         except ImportError:
             logger.error("schedule 库未安装，请执行: pip install schedule")
             raise ImportError("请安装 schedule 库: pip install schedule")
-        
-        self.schedule_time = schedule_time
+
+        self.schedule_times = self._normalize_schedule_times(
+            schedule_time=schedule_time,
+            schedule_times=schedule_times,
+        )
+        # 保留兼容字段，供旧代码读取单时间值
+        self.schedule_time = self.schedule_times[0]
         self.shutdown_handler = GracefulShutdown()
         self._task_callback: Optional[Callable] = None
         self._background_tasks: List[Dict[str, Any]] = []
         self._running = False
+        self._schedule_jobs: List[Any] = []  # 保存定时任务引用，用于动态更新
+
+    @classmethod
+    def _normalize_schedule_times(
+        cls,
+        *,
+        schedule_time: Optional[str],
+        schedule_times: Optional[Sequence[str]],
+    ) -> List[str]:
+        candidates: List[str] = []
+        invalid: List[str] = []
+
+        if schedule_times:
+            for item in schedule_times:
+                text = str(item).strip()
+                if not text:
+                    continue
+                candidates.append(text)
+        elif schedule_time:
+            candidates.append(str(schedule_time).strip())
+
+        valid: List[str] = []
+        for item in candidates:
+            if cls._TIME_PATTERN.match(item):
+                valid.append(item)
+            else:
+                invalid.append(item)
+
+        if invalid:
+            logger.warning("检测到无效定时时间，已忽略: %s", ", ".join(invalid[:5]))
+
+        normalized = sorted(set(valid))
+        return normalized or ["18:00"]
         
     def set_daily_task(self, task: Callable, run_immediately: bool = True):
         """
         设置每日定时任务
-        
+
         Args:
             task: 要执行的任务函数（无参数）
             run_immediately: 是否在设置后立即执行一次
         """
         self._task_callback = task
-        
-        # 设置每日定时任务
-        self.schedule.every().day.at(self.schedule_time).do(self._safe_run_task)
-        logger.info(f"已设置每日定时任务，执行时间: {self.schedule_time}")
-        
+        self._setup_schedule_jobs()
+
         if run_immediately:
             logger.info("立即执行一次任务...")
             self._safe_run_task()
+
+    def _setup_schedule_jobs(self):
+        """设置定时任务（内部方法）"""
+        # 先清除已有的定时任务
+        self._clear_schedule_jobs()
+
+        # 设置新的定时任务
+        for run_time in self.schedule_times:
+            job = self.schedule.every().day.at(run_time).do(self._safe_run_task)
+            self._schedule_jobs.append(job)
+        logger.info("已设置每日定时任务，执行时间: %s", ", ".join(self.schedule_times))
+
+    def _clear_schedule_jobs(self):
+        """清除所有定时任务"""
+        for job in self._schedule_jobs:
+            try:
+                self.schedule.cancel_job(job)
+            except Exception:
+                pass
+        self._schedule_jobs = []
+
+    def update_schedule_times(
+        self,
+        schedule_time: Optional[str] = None,
+        schedule_times: Optional[Sequence[str]] = None,
+    ) -> bool:
+        """
+        动态更新定时任务时间点
+
+        Args:
+            schedule_time: 单个执行时间（兼容参数）
+            schedule_times: 多个执行时间点列表
+
+        Returns:
+            bool: 是否有变化
+        """
+        new_times = self._normalize_schedule_times(
+            schedule_time=schedule_time,
+            schedule_times=schedule_times,
+        )
+
+        if new_times == self.schedule_times:
+            logger.debug("定时时间点无变化: %s", ", ".join(new_times))
+            return False
+
+        old_times = self.schedule_times
+        self.schedule_times = new_times
+        self.schedule_time = new_times[0]
+
+        # 重新设置定时任务
+        if self._task_callback is not None:
+            self._setup_schedule_jobs()
+
+        logger.info(
+            "定时任务时间点已更新: %s -> %s",
+            ", ".join(old_times),
+            ", ".join(new_times),
+        )
+        return True
     
     def _safe_run_task(self):
         """安全执行任务（带异常捕获）"""
@@ -235,24 +338,55 @@ class Scheduler:
         self._running = False
 
 
+def _get_config_schedule_times() -> List[str]:
+    """从运行时配置读取当前定时时间点"""
+    try:
+        from src.config import Config
+        config = Config.get_instance()
+        times = getattr(config, 'schedule_times', None)
+        if times:
+            return list(times)
+        time_str = getattr(config, 'schedule_time', '18:00')
+        return [time_str] if time_str else ['18:00']
+    except Exception as e:
+        logger.debug("读取配置定时时间失败: %s", e)
+        return []
+
+
 def run_with_schedule(
     task: Callable,
     schedule_time: str = "18:00",
+    schedule_times: Optional[Sequence[str]] = None,
     run_immediately: bool = True,
     background_tasks: Optional[List[Dict[str, Any]]] = None,
 ):
     """
     便捷函数：使用定时调度运行任务
-    
+
     Args:
         task: 要执行的任务函数
-        schedule_time: 每日执行时间
+        schedule_time: 每日执行时间（兼容参数）
+        schedule_times: 每日多个执行时间点（HH:MM 列表）
         run_immediately: 是否立即执行一次
         background_tasks: 可选的后台任务定义列表。每项为一个字典，
             需包含 `task` 与 `interval_seconds`，可选包含 `name`
             和 `run_immediately`。`interval_seconds` 单位为秒。
     """
-    scheduler = Scheduler(schedule_time=schedule_time)
+    scheduler = Scheduler(schedule_time=schedule_time, schedule_times=schedule_times)
+
+    # 添加配置热更新检查任务（每 60 秒检查一次）
+    def check_schedule_config_update():
+        current_times = _get_config_schedule_times()
+        if current_times:
+            scheduler.update_schedule_times(schedule_times=current_times)
+
+    scheduler.add_background_task(
+        task=check_schedule_config_update,
+        interval_seconds=60,
+        run_immediately=False,
+        name="schedule_config_watcher",
+    )
+
     for entry in background_tasks or []:
         scheduler.add_background_task(
             task=entry["task"],
@@ -277,4 +411,4 @@ if __name__ == "__main__":
         print("任务完成!")
     
     print("启动测试调度器（按 Ctrl+C 退出）")
-    run_with_schedule(test_task, schedule_time="23:59", run_immediately=True)
+    run_with_schedule(test_task, schedule_times=["23:59"], run_immediately=True)

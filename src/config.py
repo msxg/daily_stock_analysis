@@ -158,6 +158,103 @@ def parse_env_float(
     return parsed
 
 
+_SCHEDULE_TIME_PATTERN = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+def is_valid_schedule_time(value: Optional[str]) -> bool:
+    """Return True when *value* matches HH:MM 24-hour format."""
+    if value is None:
+        return False
+    return bool(_SCHEDULE_TIME_PATTERN.match(str(value).strip()))
+
+
+def parse_schedule_times_value(value: Optional[str]) -> Tuple[List[str], List[str]]:
+    """Parse one schedule-time value into normalized HH:MM items.
+
+    Supported formats:
+    - `09:30`
+    - `09:30,12:00,15:00`
+    - `["09:30", "12:00", "15:00"]`
+
+    Returns:
+        (valid_times_sorted_unique, invalid_tokens)
+    """
+    raw = (value or "").strip()
+    if not raw:
+        return ([], [])
+
+    candidates: List[str] = []
+    invalid: List[str] = []
+    parsed_as_json = False
+
+    if raw.startswith("["):
+        try:
+            loaded = json.loads(raw)
+        except json.JSONDecodeError:
+            invalid.append(raw)
+        else:
+            parsed_as_json = True
+            if not isinstance(loaded, list):
+                invalid.append(raw)
+            else:
+                for item in loaded:
+                    item_text = str(item).strip()
+                    if not item_text:
+                        continue
+                    candidates.append(item_text)
+
+    if not parsed_as_json and not candidates:
+        for token in re.split(r"[,;，；\s]+", raw):
+            item = token.strip()
+            if item:
+                candidates.append(item)
+
+    valid_times: List[str] = []
+    for item in candidates:
+        if is_valid_schedule_time(item):
+            valid_times.append(item)
+        else:
+            invalid.append(item)
+
+    normalized = sorted(set(valid_times))
+    return (normalized, invalid)
+
+
+def resolve_schedule_times(
+    *,
+    schedule_times_value: Optional[str],
+    schedule_time_value: Optional[str],
+    default_time: str = "18:00",
+) -> List[str]:
+    """Resolve effective schedule times with backward compatibility.
+
+    Priority:
+    1. SCHEDULE_TIMES (multi-format)
+    2. SCHEDULE_TIME (legacy; now also accepts list-style values)
+    3. default_time
+    """
+    configured_times, configured_invalid = parse_schedule_times_value(schedule_times_value)
+    if configured_invalid:
+        logger.warning(
+            "SCHEDULE_TIMES 包含无效时间，已忽略: %s",
+            ", ".join(configured_invalid[:5]),
+        )
+    if configured_times:
+        return configured_times
+
+    legacy_times, legacy_invalid = parse_schedule_times_value(schedule_time_value)
+    if legacy_invalid:
+        logger.warning(
+            "SCHEDULE_TIME=%r 格式无效，回退默认时间 %s",
+            schedule_time_value,
+            default_time,
+        )
+    if legacy_times:
+        return legacy_times
+
+    return [default_time]
+
+
 def normalize_news_strategy_profile(value: Optional[str]) -> str:
     """Normalize news strategy profile to known values."""
     candidate = (value or "short").strip().lower()
@@ -648,6 +745,7 @@ class Config:
     # === 定时任务配置 ===
     schedule_enabled: bool = False            # 是否启用定时任务
     schedule_time: str = "18:00"              # 每日推送时间（HH:MM 格式）
+    schedule_times: List[str] = field(default_factory=lambda: ["18:00"])  # 多时间点执行（HH:MM 列表）
     schedule_run_immediately: bool = True     # 启动时是否立即执行一次
     run_immediately: bool = True              # 启动时是否立即执行一次（非定时模式）
     market_review_enabled: bool = True        # 是否启用大盘复盘
@@ -1055,6 +1153,12 @@ class Config:
             if schedule_run_immediately_env is not None
             else legacy_run_immediately
         )
+        schedule_time_env = os.getenv('SCHEDULE_TIME', '18:00')
+        schedule_times = resolve_schedule_times(
+            schedule_times_value=os.getenv('SCHEDULE_TIMES'),
+            schedule_time_value=schedule_time_env,
+            default_time='18:00',
+        )
 
         report_language_raw = cls._resolve_report_language_env_value(
             preexisting_report_language
@@ -1245,7 +1349,8 @@ class Config:
             http_proxy=os.getenv('HTTP_PROXY'),
             https_proxy=os.getenv('HTTPS_PROXY'),
             schedule_enabled=os.getenv('SCHEDULE_ENABLED', 'false').lower() == 'true',
-            schedule_time=os.getenv('SCHEDULE_TIME', '18:00'),
+            schedule_time=schedule_times[0],
+            schedule_times=schedule_times,
             schedule_run_immediately=schedule_run_immediately,
             run_immediately=legacy_run_immediately,
             market_review_enabled=os.getenv('MARKET_REVIEW_ENABLED', 'true').lower() == 'true',

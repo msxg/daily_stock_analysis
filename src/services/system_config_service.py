@@ -23,6 +23,7 @@ from src.config import (
     normalize_news_strategy_profile,
     normalize_llm_channel_model,
     parse_env_bool,
+    parse_schedule_times_value,
     resolve_news_window_days,
     resolve_llm_channel_protocol,
     setup_env,
@@ -535,6 +536,32 @@ class SystemConfigService:
                     "actual": "contains newline",
                 }
             )
+            return issues
+
+        if key == "SCHEDULE_TIMES":
+            parsed_times, invalid_tokens = parse_schedule_times_value(value)
+            if invalid_tokens:
+                issues.append(
+                    {
+                        "key": key,
+                        "code": "invalid_format",
+                        "message": "Value must be HH:MM list (comma-separated or JSON array)",
+                        "severity": "error",
+                        "expected": "09:30,12:00,15:00 or [\"09:30\",\"12:00\"]",
+                        "actual": ", ".join(invalid_tokens[:3]),
+                    }
+                )
+            if value.strip() and not parsed_times:
+                issues.append(
+                    {
+                        "key": key,
+                        "code": "invalid_format",
+                        "message": "At least one valid HH:MM time is required",
+                        "severity": "error",
+                        "expected": ">=1 valid HH:MM",
+                        "actual": value,
+                    }
+                )
             return issues
 
         if data_type == "integer":

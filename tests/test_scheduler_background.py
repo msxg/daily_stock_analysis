@@ -74,7 +74,7 @@ class SchedulerBackgroundTaskTestCase(unittest.TestCase):
             order = []
 
             class FakeScheduler:
-                def __init__(self, schedule_time="18:00"):
+                def __init__(self, schedule_time="18:00", schedule_times=None):
                     order.append(("init", schedule_time))
 
                 def add_background_task(self, **kwargs):
@@ -98,7 +98,9 @@ class SchedulerBackgroundTaskTestCase(unittest.TestCase):
                     }],
                 )
 
-        self.assertEqual(order[1:3], [("background", "event_monitor"), ("daily", True)])
+        self.assertEqual(order[1], ("background", "schedule_config_watcher"))
+        self.assertEqual(order[2], ("background", "event_monitor"))
+        self.assertEqual(order[3], ("daily", True))
 
 
 if __name__ == "__main__":

@@ -193,7 +193,8 @@ journalctl -u stock-analyzer -f
 | Config Item | Default | Description |
 |--------|--------|------|
 | `SCHEDULE_ENABLED` | `false` | Enable scheduled tasks |
-| `SCHEDULE_TIME` | `18:00` | Daily execution time |
+| `SCHEDULE_TIME` | `18:00` | Daily execution time (single time point) |
+| `SCHEDULE_TIMES` | - | Multiple execution times (comma-separated or JSON array, overrides SCHEDULE_TIME) |
 | `MARKET_REVIEW_ENABLED` | `true` | Enable market review |
 | `TAVILY_API_KEYS` | - | News search (optional) |
 | `MINIMAX_API_KEYS` | - | MiniMax search (optional) |

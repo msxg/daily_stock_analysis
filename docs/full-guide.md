@@ -297,7 +297,8 @@ daily_stock_analysis/
 | `MARKET_REVIEW_REGION` | 大盘复盘市场区域：cn(A股)、us(美股)、both(两者)，us 适合仅关注美股的用户 | `cn` |
 | `TRADING_DAY_CHECK_ENABLED` | 交易日检查：默认 `true`，非交易日跳过执行；设为 `false` 或使用 `--force-run` 可强制执行（Issue #373） | `true` |
 | `SCHEDULE_ENABLED` | 启用定时任务 | `false` |
-| `SCHEDULE_TIME` | 定时执行时间 | `18:00` |
+| `SCHEDULE_TIME` | 定时执行时间（单时间点） | `18:00` |
+| `SCHEDULE_TIMES` | 多时间点执行（逗号分隔或 JSON 数组，优先级高于 SCHEDULE_TIME） | - |
 | `LOG_DIR` | 日志目录 | `./logs` |
 
 ---
@@ -502,7 +503,8 @@ python main.py --schedule --no-run-immediately
 | 变量名 | 说明 | 默认值 | 示例 |
 |--------|------|:-------:|:-----:|
 | `SCHEDULE_ENABLED` | 是否启用定时任务 | `false` | `true` |
-| `SCHEDULE_TIME` | 每日执行时间 (HH:MM) | `18:00` | `09:30` |
+| `SCHEDULE_TIME` | 每日执行时间 (HH:MM，单时间点) | `18:00` | `09:30` |
+| `SCHEDULE_TIMES` | 多时间点执行（逗号分隔或 JSON 数组，优先级高于 SCHEDULE_TIME） | - | `09:30,15:00` |
 | `SCHEDULE_RUN_IMMEDIATELY` | 启动服务时是否立即运行一次 | `true` | `false` |
 | `TRADING_DAY_CHECK_ENABLED` | 交易日检查：非交易日跳过执行；设为 `false` 可强制执行 | `true` | `false` |
 

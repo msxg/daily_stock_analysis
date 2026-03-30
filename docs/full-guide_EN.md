@@ -270,7 +270,8 @@ Default schedule: Every weekday at **18:00 (Beijing Time)** automatic execution.
 | `MARKET_REVIEW_ENABLED` | Enable market review | `true` |
 | `MARKET_REVIEW_REGION` | Market review region: cn (A-shares), us (US stocks), both | `cn` |
 | `SCHEDULE_ENABLED` | Enable scheduled tasks | `false` |
-| `SCHEDULE_TIME` | Scheduled execution time | `18:00` |
+| `SCHEDULE_TIME` | Scheduled execution time (single time point) | `18:00` |
+| `SCHEDULE_TIMES` | Multiple execution times (comma-separated or JSON array, overrides SCHEDULE_TIME) | - |
 | `LOG_DIR` | Log directory | `./logs` |
 
 > Behavior notes:

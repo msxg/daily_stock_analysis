@@ -407,7 +407,8 @@ SINGLE_STOCK_NOTIFY=true       # Push immediately after each stock analysis
 
 # === Schedule ===
 SCHEDULE_ENABLED=true          # Enable scheduled task
-SCHEDULE_TIME=18:00            # Daily run time (HH:MM, 24-hour format)
+SCHEDULE_TIME=18:00            # Daily run time (HH:MM, 24-hour format, single time point)
+# SCHEDULE_TIMES=09:30,15:00   # Multiple times (comma-separated or JSON array, overrides SCHEDULE_TIME)
 MARKET_REVIEW_ENABLED=true     # Enable market review
 
 # === Data Source ===
