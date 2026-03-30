@@ -53,7 +53,7 @@ export function AppShell() {
         data-testid="shell-glow-right"
       />
 
-      <div className="relative mx-auto flex min-h-screen max-w-[1600px]">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-[1600px]">
         <aside className="hidden w-[var(--dsa-shell-sidebar-width)] shrink-0 border-r dsa-theme-border-subtle bg-white/70 px-4 py-5 backdrop-blur-xl lg:block">
           <div className="mb-8 flex items-center gap-3">
             <div className="grid h-11 w-11 place-content-center rounded-2xl dsa-theme-gradient-diagonal text-white dsa-theme-shadow-brand">
@@ -91,10 +91,10 @@ export function AppShell() {
           </nav>
         </aside>
 
-        <div className="flex min-h-screen flex-1 flex-col">
+        <div className="min-w-0 flex min-h-screen flex-1 flex-col">
           <header className="sticky top-0 z-30 border-b dsa-theme-border-subtle bg-white/75 px-[var(--dsa-shell-content-padding)] py-2.5 backdrop-blur-xl">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 <button
                   type="button"
                   onClick={toggleMobileMenu}
@@ -103,16 +103,16 @@ export function AppShell() {
                 >
                   {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </button>
-                <div>
-                  <h1 className="text-lg font-semibold text-slate-900">{pageLabel}</h1>
+                <div className="min-w-0">
+                  <h1 className="truncate text-lg font-semibold text-slate-900">{pageLabel}</h1>
                   {pageDescription ? (
-                    <p className="mt-0.5 text-xs text-slate-600" data-testid="shell-page-description">
+                    <p className="mt-0.5 max-w-full break-words text-xs text-slate-600" data-testid="shell-page-description">
                       {pageDescription}
                     </p>
                   ) : null}
                 </div>
               </div>
-              <div className="flex items-end gap-2">
+              <div className="shrink-0 flex items-end gap-2">
                 {authMeQuery.data?.authenticated ? (
                   <div className="hidden rounded-lg border dsa-theme-border-subtle bg-white/70 px-2.5 py-1 text-[11px] text-slate-600 md:block">
                     {authMeQuery.data.user?.displayName || authMeQuery.data.user?.username || '用户'}
@@ -122,12 +122,13 @@ export function AppShell() {
                 <button
                   type="button"
                   onClick={() => void handleLogout()}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border dsa-theme-border-default bg-white px-3 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border dsa-theme-border-default bg-white px-2 text-xs font-semibold text-slate-700 transition hover:dsa-theme-bg-soft disabled:cursor-not-allowed disabled:opacity-60 sm:px-3"
                   data-testid="shell-logout-button"
                   disabled={logoutMutation.isPending}
                 >
                   <LogOut className="h-3.5 w-3.5" />
-                  {logoutMutation.isPending ? '退出中...' : '退出登录'}
+                  <span className="hidden sm:inline">{logoutMutation.isPending ? '退出中...' : '退出登录'}</span>
+                  <span className="sr-only sm:hidden">{logoutMutation.isPending ? '退出中...' : '退出登录'}</span>
                 </button>
               </div>
             </div>

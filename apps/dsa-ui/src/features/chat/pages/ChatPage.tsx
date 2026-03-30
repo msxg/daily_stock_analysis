@@ -41,20 +41,20 @@ function MessageMarkdown({ content }: { content: string }) {
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
-        p: ({ children }) => <p className="leading-relaxed">{children}</p>,
-        ul: ({ children }) => <ul className="list-disc space-y-1 pl-4 text-sm leading-relaxed">{children}</ul>,
-        ol: ({ children }) => <ol className="list-decimal space-y-1 pl-4 text-sm leading-relaxed">{children}</ol>,
-        li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+        p: ({ children }) => <p className="break-words leading-relaxed">{children}</p>,
+        ul: ({ children }) => <ul className="list-disc space-y-1 pl-4 text-sm leading-relaxed break-words">{children}</ul>,
+        ol: ({ children }) => <ol className="list-decimal space-y-1 pl-4 text-sm leading-relaxed break-words">{children}</ol>,
+        li: ({ children }) => <li className="leading-relaxed break-words">{children}</li>,
         code: ({ children }) => (
-          <code className="rounded bg-slate-200/70 px-1.5 py-0.5 text-xs text-slate-800">{children}</code>
+          <code className="break-words rounded bg-slate-200/70 px-1.5 py-0.5 text-xs text-slate-800">{children}</code>
         ),
         pre: ({ children }) => (
-          <pre className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-3 text-xs text-slate-700">
+          <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded-lg border border-slate-200 bg-slate-100 p-3 text-xs text-slate-700">
             {children}
           </pre>
         ),
         blockquote: ({ children }) => (
-          <blockquote className="border-l-2 dsa-theme-border-accent-soft pl-2.5 text-sm leading-relaxed text-slate-600 italic">
+          <blockquote className="break-words border-l-2 dsa-theme-border-accent-soft pl-2.5 text-sm leading-relaxed text-slate-600 italic">
             {children}
           </blockquote>
         ),
@@ -492,7 +492,7 @@ export function ChatPage() {
           </div>
         </div>
 
-        <div className="space-y-2 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1" data-testid={isDesktop ? 'chat-session-list' : 'chat-mobile-session-list'}>
+        <div className="space-y-2 max-h-[calc(100vh-14rem)] overflow-x-hidden overflow-y-auto pr-1" data-testid={isDesktop ? 'chat-session-list' : 'chat-mobile-session-list'}>
           {sessionsQuery.isFetching ? (
             <p className="rounded-xl border border-dashed dsa-theme-border-strong dsa-theme-bg-soft-70 p-3 text-sm text-slate-600">正在加载会话...</p>
           ) : null}
@@ -560,7 +560,7 @@ export function ChatPage() {
   }
 
   return (
-    <section className="space-y-3" data-testid="page-chat">
+    <section className="max-w-full overflow-x-hidden space-y-3" data-testid="page-chat">
       <div className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-2 lg:hidden" data-testid="chat-mobile-switcher">
         <div className="grid grid-cols-2 gap-2">
           <button
@@ -593,13 +593,13 @@ export function ChatPage() {
       </div>
 
       {mobilePane === 'sessions' ? (
-        <section className="rounded-2xl border dsa-theme-border-subtle bg-white/80 p-3 lg:hidden" data-testid="chat-mobile-session-panel">
+        <section className="max-w-full overflow-x-hidden rounded-2xl border dsa-theme-border-subtle bg-white/80 p-3 lg:hidden" data-testid="chat-mobile-session-panel">
           {renderSessionManagerContent('mobile')}
         </section>
       ) : null}
 
       <article
-        className={`${mobilePane === 'messages' ? 'block' : 'hidden'} rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4 lg:block lg:min-h-[calc(100vh-6rem)]`}
+        className={`max-w-full overflow-x-hidden ${mobilePane === 'messages' ? 'block' : 'hidden'} rounded-2xl border dsa-theme-border-subtle bg-white/80 p-4 lg:block lg:min-h-[calc(100vh-6rem)]`}
         data-testid="chat-message-panel"
       >
           <h2 hidden data-testid="page-title-chat">
@@ -673,8 +673,8 @@ export function ChatPage() {
           <div className="mt-3 flex min-h-[58vh] flex-col rounded-2xl border dsa-theme-border-subtle bg-white p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs uppercase tracking-[0.12em] text-slate-500">会话消息</p>
-              <div className="ml-auto flex min-w-0 max-w-full items-center gap-2">
-                <span className="text-[11px] uppercase tracking-[0.08em] text-slate-500">会话标题</span>
+              <div className="ml-auto flex min-w-0 max-w-full items-center gap-2 overflow-hidden">
+                <span className="hidden text-[11px] uppercase tracking-[0.08em] text-slate-500 sm:inline">会话标题</span>
                 <span
                   className="max-w-[min(46vw,26rem)] truncate text-xs font-semibold text-slate-700"
                   data-testid="chat-current-session-title"
@@ -696,14 +696,14 @@ export function ChatPage() {
               </p>
             ) : null}
 
-            <div className="mt-3 min-h-[18rem] flex-1 space-y-2 overflow-y-auto pr-1" data-testid="chat-message-list" ref={messageListRef}>
+            <div className="mt-3 min-h-[18rem] flex-1 space-y-2 overflow-x-hidden overflow-y-auto pr-1" data-testid="chat-message-list" ref={messageListRef}>
               {visibleMessages.map((message) => {
                 const isUser = message.role === 'user'
                 const parsedMessage = splitThinkingContent(message.content || '')
                 return (
                   <div
                     key={message.id}
-                    className={`space-y-2 rounded-xl border px-3 py-2 text-sm leading-relaxed ${
+                    className={`overflow-hidden break-words space-y-2 rounded-xl border px-3 py-2 text-sm leading-relaxed ${
                       isUser ? 'border-sky-200/70 bg-sky-50 text-slate-800' : 'dsa-theme-border-subtle bg-slate-50 text-slate-800'
                     }`}
                   >
@@ -734,7 +734,7 @@ export function ChatPage() {
 
               {showPendingUserMessage && pendingUserMessage ? (
                 <div
-                  className="space-y-2 rounded-xl border border-sky-200/70 bg-sky-50 px-3 py-2 text-sm leading-relaxed text-slate-800"
+                  className="overflow-hidden break-words space-y-2 rounded-xl border border-sky-200/70 bg-sky-50 px-3 py-2 text-sm leading-relaxed text-slate-800"
                   data-testid="chat-pending-user-message"
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -748,7 +748,7 @@ export function ChatPage() {
 
               {showStreamCard ? (
                 <div
-                  className={`space-y-2 rounded-xl border px-3 py-2 text-sm leading-relaxed text-slate-800 ${
+                  className={`overflow-hidden break-words space-y-2 rounded-xl border px-3 py-2 text-sm leading-relaxed text-slate-800 ${
                     isStreaming
                       ? 'dsa-theme-border-subtle bg-slate-50'
                       : streamError
@@ -827,20 +827,20 @@ export function ChatPage() {
             </div>
 
             <div className="mt-2 shrink-0 rounded-xl border dsa-theme-border-subtle dsa-theme-bg-soft-50 p-3" data-testid="chat-composer">
-              <div className="flex items-start justify-between gap-4">
-                <label htmlFor="chat-input" className="pt-1 text-xs uppercase tracking-[0.12em] text-slate-600">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+                <label htmlFor="chat-input" className="pt-1 text-xs uppercase tracking-[0.12em] text-slate-600 lg:shrink-0">
                   输入问题
                 </label>
-                <div className="ml-auto min-w-0 max-w-[min(62%,52rem)] text-right" data-testid="chat-skill-panel">
-                  <div className="overflow-x-auto pb-1" data-testid="chat-skill-chips">
-                    <div className="inline-flex min-w-max items-center justify-end gap-1.5 whitespace-nowrap">
+                <div className="min-w-0 w-full lg:ml-auto lg:max-w-[min(62%,52rem)] lg:text-right" data-testid="chat-skill-panel">
+                  <div className="max-w-full overflow-x-auto pb-1" data-testid="chat-skill-chips">
+                    <div className="flex min-w-0 flex-wrap items-center justify-start gap-1.5 lg:justify-end">
                       <span className="shrink-0 text-xs font-semibold text-slate-600">策略：</span>
                       {quickSkills.map((skill) => (
                         <button
                           key={skill.id}
                           type="button"
                           onClick={() => setSelectedSkillId(skill.id)}
-                          className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition ${
+                          className={`max-w-[12rem] shrink-0 truncate rounded-full border px-2 py-0.5 text-[11px] font-semibold transition ${
                             effectiveSelectedSkillId === skill.id
                               ? 'dsa-theme-border-accent-strong dsa-theme-bg-accent dsa-theme-text-accent'
                               : 'dsa-theme-border-default bg-white text-slate-700 hover:dsa-theme-bg-soft'
@@ -855,7 +855,7 @@ export function ChatPage() {
                         value={effectiveSelectedSkillId}
                         onChange={(event) => setSelectedSkillId(event.target.value)}
                         aria-label="策略选择"
-                        className="h-7 w-[11rem] shrink-0 rounded-lg border dsa-theme-border-default bg-white px-2.5 text-[13px] text-slate-800 outline-none transition dsa-theme-focus-border-soft focus:ring-2 dsa-theme-focus-ring"
+                        className="h-7 min-w-[10rem] max-w-full flex-1 rounded-lg border dsa-theme-border-default bg-white px-2.5 text-[13px] text-slate-800 outline-none transition dsa-theme-focus-border-soft focus:ring-2 dsa-theme-focus-ring lg:w-[11rem] lg:flex-none"
                         data-testid="chat-skill-select"
                         disabled={!allSkills.length}
                       >
